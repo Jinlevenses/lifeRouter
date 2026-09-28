@@ -1,12 +1,17 @@
 import type { Metadata } from "next";
+import { safeNextPath } from "@/lib/safe-next";
 import { LoginForm } from "./login-form";
 
 export const metadata: Metadata = { title: "로그인" };
 
-export default async function LoginPage({ searchParams }: { searchParams: Promise<{ next?: string }> }) {
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ next?: string | string[] }>;
+}) {
   const { next } = await searchParams;
-  // Only same-site relative paths are allowed as a post-login destination.
-  const safeNext = next && next.startsWith("/") && !next.startsWith("//") ? next : "/";
+  // Only same-origin paths are allowed as a post-login destination.
+  const safeNext = safeNextPath(next);
   return (
     <main className="flex min-h-dvh items-center justify-center px-4">
       <div className="card w-full max-w-sm p-6 sm:p-8">

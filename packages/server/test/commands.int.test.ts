@@ -1,4 +1,5 @@
 import { sql } from "drizzle-orm";
+import type { CollectionProperty, CollectionView } from "@liferoute/contracts";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { loadWorkspace } from "../src/workspace";
 import { loadNoteDetail, noteMarkdown } from "../src/notes-read";
@@ -446,5 +447,92 @@ describe("SEC-001 read model has no secrets", () => {
     expect(json).not.toContain("tokenHash");
     expect(json).not.toContain("syncState");
     expect(ws.apiTokens[0]?.prefix).toBe(created.secret.slice(0, 8));
+  });
+});
+
+describe("INT-COLLECTION-001 collections (FR-006)", () => {
+  it("validates typed values and prunes removed properties", async () => {
+    const properties: [CollectionProperty, CollectionProperty] = [
+      {
+        id: "title",
+        name: "제목",
+        type: "text",
+        options: [],
+        relationCollectionId: null,
+        required: true,
+        sortOrder: 0,
+      },
+      {
+        id: "state",
+        name: "상태",
+        type: "status",
+        options: [
+          { id: "todo", label: "할 일", color: null },
+          { id: "done", label: "완료", color: null },
+        ],
+        relationCollectionId: null,
+        required: false,
+        sortOrder: 1,
+      },
+    ];
+    const views: CollectionView[] = [
+      {
+        id: "board",
+        name: "보드",
+        kind: "board",
+        groupByPropertyId: "state",
+        datePropertyId: null,
+        sorts: [],
+        filters: [],
+        visiblePropertyIds: [],
+      },
+    ];
+    const { collection } = await h.ok({
+      type: "collection.create",
+      payload: { name: "독서", properties, views },
+    });
+    const bad = await h.run({
+      type: "collection.record.create",
+      payload: { collectionId: collection.id, values: { state: { type: "status", value: "nope" } } },
+    });
+    expect(bad.status).toBe(422);
+    const { record } = await h.ok({
+      type: "collection.record.create",
+      payload: {
+        collectionId: collection.id,
+        values: { title: { type: "text", value: "책" }, state: { type: "status", value: "todo" } },
+      },
+    });
+    const badView = await h.run({
+      type: "collection.update",
+      payload: { collectionId: collection.id, expectedVersion: 1, patch: { properties: [properties[0]] } },
+    });
+    expect(badView.status).toBe(422); // the board would lose its group-by property
+    await h.ok({
+      type: "collection.update",
+      payload: {
+        collectionId: collection.id,
+        expectedVersion: 1,
+        patch: {
+          properties: [properties[0]],
+          views: [
+            {
+              id: "table",
+              name: "표",
+              kind: "table",
+              groupByPropertyId: null,
+              datePropertyId: null,
+              sorts: [],
+              filters: [],
+              visiblePropertyIds: [],
+            },
+          ],
+        },
+      },
+    });
+    const ws = await loadWorkspace(h.db, h.now);
+    const pruned = ws.collectionRecords.find((r) => r.id === record.id)!;
+    expect(Object.keys(pruned.values)).toEqual(["title"]);
+    expect(pruned.version).toBe(2);
   });
 });

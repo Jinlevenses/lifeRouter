@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { authClient } from "@/lib/auth-client";
+import { safeNextPath } from "@/lib/safe-next";
 
 export function LoginForm({ next }: { next: string }) {
   const [error, setError] = useState<string | null>(null);
@@ -26,7 +27,7 @@ export function LoginForm({ next }: { next: string }) {
       );
       return;
     }
-    window.location.assign(next);
+    window.location.assign(safeNextPath(next));
   }
 
   return (
