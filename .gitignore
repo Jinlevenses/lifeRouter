@@ -1,0 +1,21 @@
+node_modules/
+.next/
+out/
+dist/
+coverage/
+playwright-report/
+test-results/
+*.tsbuildinfo
+next-env.d.ts
+.DS_Store
+
+# Secrets and personal data never live in the repository (NFR-001)
+.env
+.env.*
+!.env.example
+/data/
+/.liferoute/
+*.pem
+*.key
+backups/
+attachments/

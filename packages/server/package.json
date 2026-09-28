@@ -1,0 +1,28 @@
+{
+  "name": "@liferoute/server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./auth": "./src/auth.ts",
+    "./db": "./src/db/client.ts",
+    "./schema": "./src/db/schema.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@liferoute/contracts": "workspace:*",
+    "@liferoute/core": "workspace:*",
+    "better-auth": "^1.7.6",
+    "decimal.js": "^10.6.0",
+    "drizzle-orm": "^0.45.3",
+    "pg": "^8.23.0",
+    "pg-boss": "^12.35.0",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@types/pg": "^8.23.1"
+  }
+}

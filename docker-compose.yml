@@ -1,0 +1,48 @@
+# Normal deployment on the owner's Mac (docs/11_operations). Data volumes live outside the repository.
+# Usage: cp .env.example .env.local && edit; docker compose --env-file .env.local up -d
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: liferoute
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env.local}
+      POSTGRES_DB: liferoute
+    volumes:
+      - ${LIFEROUTE_DATA_DIR:-~/LifeRouteData}/postgres-docker:/var/lib/postgresql/data
+    ports:
+      - "127.0.0.1:5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U liferoute"]
+      interval: 5s
+      retries: 10
+
+  web:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file: .env.local
+    environment:
+      DATABASE_URL: postgres://liferoute:${POSTGRES_PASSWORD}@db:5432/liferoute
+      LIFEROUTE_DATA_DIR: /data
+    volumes:
+      - ${LIFEROUTE_DATA_DIR:-~/LifeRouteData}:/data
+    # LAN/Tailscale only; never publish to the internet (NFR-001).
+    ports:
+      - "${LIFEROUTE_BIND:-127.0.0.1}:3000:3000"
+
+  worker:
+    build: .
+    restart: unless-stopped
+    command: ["pnpm", "worker"]
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file: .env.local
+    environment:
+      DATABASE_URL: postgres://liferoute:${POSTGRES_PASSWORD}@db:5432/liferoute
+      LIFEROUTE_DATA_DIR: /data
+    volumes:
+      - ${LIFEROUTE_DATA_DIR:-~/LifeRouteData}:/data

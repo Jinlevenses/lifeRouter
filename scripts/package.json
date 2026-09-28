@@ -1,0 +1,22 @@
+{
+  "name": "@liferoute/scripts",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@liferoute/contracts": "workspace:*",
+    "@liferoute/core": "workspace:*",
+    "@liferoute/server": "workspace:*",
+    "drizzle-orm": "^0.45.3",
+    "pg": "^8.23.0"
+  },
+  "devDependencies": {
+    "@types/pg": "^8.23.1"
+  },
+  "optionalDependencies": {
+    "embedded-postgres": "18.4.0-beta.17"
+  }
+}

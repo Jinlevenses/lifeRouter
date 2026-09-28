@@ -1,0 +1,10 @@
+packages:
+  - apps/*
+  - packages/*
+  - scripts
+onlyBuiltDependencies:
+  - esbuild
+  - sharp
+  - unrs-resolver
+  - embedded-postgres
+  - "@embedded-postgres/*"

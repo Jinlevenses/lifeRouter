@@ -1,0 +1,42 @@
+{
+  "name": "liferoute",
+  "private": true,
+  "packageManager": "pnpm@10.33.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "type": "module",
+  "scripts": {
+    "dev": "pnpm --filter @liferoute/web dev",
+    "build": "pnpm --filter @liferoute/web build",
+    "start": "pnpm --filter @liferoute/web start",
+    "typecheck": "pnpm -r --parallel typecheck",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "test": "vitest run --project unit",
+    "test:int": "vitest run --project integration",
+    "test:e2e": "playwright test",
+    "verify": "pnpm typecheck && pnpm lint && pnpm test && pnpm test:int && pnpm build",
+    "db:local": "tsx scripts/db-local.ts",
+    "db:generate": "drizzle-kit generate --config packages/server/drizzle.config.ts",
+    "db:migrate": "tsx scripts/db-migrate.ts",
+    "owner:create": "tsx scripts/owner-create.ts",
+    "worker": "tsx scripts/worker.ts",
+    "backup": "tsx scripts/backup.ts",
+    "restore": "tsx scripts/restore.ts"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.5",
+    "@playwright/test": "~1.56.1",
+    "@types/node": "^22.20.4",
+    "@vitest/coverage-v8": "^4.1.11",
+    "drizzle-kit": "^0.31.11",
+    "eslint": "^9.39.5",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "prettier": "^3.9.9",
+    "tsx": "^4.23.15",
+    "typescript": "~5.9.3",
+    "typescript-eslint": "^8.70.1",
+    "vitest": "^4.1.11"
+  }
+}
