@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import clsx from "clsx";
 import { CalendarClock, Flag, Repeat, Star } from "lucide-react";
 import type { Task } from "@liferoute/contracts";
@@ -25,10 +26,21 @@ export function TaskRow({
   const toastNext = (due: string) =>
     toast.show({ tone: "info", title: `다음 반복을 ${relativeDay(due, ws.today)}로 만들었습니다.` });
   const project = task.projectId ? ws.projects.find((p) => p.id === task.projectId) : null;
-  const done = task.status === "done";
+  // Optimistic checkbox (docs/05_web): flips immediately, settles to the server state after refresh.
+  const [optimistic, setOptimistic] = useState<boolean | null>(null);
+  const done = optimistic ?? task.status === "done";
   const overdue = task.status === "open" && task.dueDate !== null && task.dueDate < ws.today;
 
   async function toggle() {
+    setOptimistic(task.status === "open");
+    try {
+      await persist();
+    } finally {
+      setOptimistic(null);
+    }
+  }
+
+  async function persist() {
     if (task.status === "open") {
       const result = await run({
         type: "task.complete",

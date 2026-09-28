@@ -23,7 +23,9 @@
     "owner:create": "tsx scripts/owner-create.ts",
     "worker": "tsx scripts/worker.ts",
     "backup": "tsx scripts/backup.ts",
-    "restore": "tsx scripts/restore.ts"
+    "restore": "tsx scripts/restore.ts",
+    "verify:e2e": "playwright test",
+    "seed:demo": "tsx scripts/seed-demo.ts"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",
@@ -31,6 +33,7 @@
     "@types/node": "^22.20.4",
     "@vitest/coverage-v8": "^4.1.11",
     "drizzle-kit": "^0.31.11",
+    "drizzle-orm": "^0.45.3",
     "eslint": "^9.39.5",
     "eslint-plugin-react-hooks": "^7.1.1",
     "prettier": "^3.9.9",

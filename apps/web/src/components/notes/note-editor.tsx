@@ -515,7 +515,7 @@ function Toolbar({
   const c = () => editor.chain().focus();
   return (
     <div role="toolbar" aria-label="서식" className="flex flex-wrap gap-0.5 border-b border-line px-2 py-1">
-      {item("제목", <Heading2 className="size-4" />, editor.isActive("heading", { level: 2 }), () =>
+      {item("소제목", <Heading2 className="size-4" />, editor.isActive("heading", { level: 2 }), () =>
         c().toggleHeading({ level: 2 }).run(),
       )}
       {item("굵게", <Bold className="size-4" />, editor.isActive("bold"), () => c().toggleBold().run())}

@@ -76,10 +76,7 @@ export function AppShell({ ownerName, children }: { ownerName: string; children:
         </div>
       </aside>
 
-      <main
-        id="main"
-        className="mx-auto w-full max-w-6xl px-4 pb-28 pt-5 sm:px-6 lg:ml-sidebar lg:max-w-none lg:px-10 lg:pb-12 lg:pt-8"
-      >
+      <main id="main" className="px-4 pb-28 pt-5 sm:px-6 lg:ml-sidebar lg:px-10 lg:pb-12 lg:pt-8">
         <div className="mx-auto max-w-5xl">{children}</div>
       </main>
 
