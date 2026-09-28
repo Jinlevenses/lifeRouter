@@ -21,7 +21,8 @@ export async function verifyCaptureToken(db: Db, authorization: string | null): 
     .select()
     .from(apiTokens)
     .where(and(eq(apiTokens.tokenHash, hash), isNull(apiTokens.revokedAt)));
-  if (!token || token.scope !== "capture") throw new DomainError("UNAUTHORIZED", "유효하지 않은 캡처 토큰입니다.");
+  if (!token || token.scope !== "capture")
+    throw new DomainError("UNAUTHORIZED", "유효하지 않은 캡처 토큰입니다.");
   await db.update(apiTokens).set({ lastUsedAt: new Date() }).where(eq(apiTokens.id, token.id));
   return { tokenId: token.id };
 }
@@ -31,17 +32,37 @@ export interface CaptureInput {
   file: { bytes: Uint8Array; name: string } | null;
 }
 
-export async function capture(db: Db, integrations: Integrations, input: CaptureInput, now = new Date()): Promise<CaptureResponse> {
+export async function capture(
+  db: Db,
+  integrations: Integrations,
+  input: CaptureInput & { source?: "web" },
+  now = new Date(),
+): Promise<CaptureResponse> {
   const parsed = CaptureRequestSchema.safeParse(input.fields);
-  if (!parsed.success) throw validationFailed(parsed.error.issues.map((i) => ({ path: i.path.map(String), message: i.message })));
-  const req = parsed.data;
+  if (!parsed.success)
+    throw validationFailed(
+      parsed.error.issues.map((i) => ({ path: i.path.map(String), message: i.message })),
+    );
+  // Web uploads (owner session) are recorded as "web"; token captures keep their declared source.
+  const req = { ...parsed.data, source: input.source ?? parsed.data.source };
   const needsFile = req.kind === "image" || req.kind === "receipt";
-  if (needsFile && !input.file) throw validationFailed([{ path: "file", message: "이미지 파일이 필요합니다." }]);
+  if (needsFile && !input.file)
+    throw validationFailed([{ path: "file", message: "이미지 파일이 필요합니다." }]);
 
   const attachment = input.file
-    ? await storeAttachment(db, { bytes: input.file.bytes, originalName: input.file.name, clientSha256: req.sha256, now })
+    ? await storeAttachment(db, {
+        bytes: input.file.bytes,
+        originalName: input.file.name,
+        clientSha256: req.sha256,
+        now,
+      })
     : null;
-  if (needsFile && attachment && !attachment.mime.startsWith("image/") && attachment.mime !== "application/pdf") {
+  if (
+    needsFile &&
+    attachment &&
+    !attachment.mime.startsWith("image/") &&
+    attachment.mime !== "application/pdf"
+  ) {
     throw new DomainError("ATTACHMENT_REJECTED", "이미지 또는 PDF만 영수증/이미지로 받을 수 있습니다.");
   }
 
@@ -61,7 +82,8 @@ export async function capture(db: Db, integrations: Integrations, input: Capture
         updatedAt: now,
       })
       .returning();
-    if (req.kind !== "receipt") return { ok: true as const, item: toInboxItem(item!), attachment, receipt: null };
+    if (req.kind !== "receipt")
+      return { ok: true as const, item: toInboxItem(item!), attachment, receipt: null };
 
     // Receipts become drafts right away; nothing is confirmed without the owner (docs/09_capture).
     const [receipt] = await tx

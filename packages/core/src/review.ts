@@ -36,7 +36,8 @@ export interface ReviewInput {
 export function computeReview(input: ReviewInput): ReviewComputed {
   const { period, timeZone } = input;
   const until = minDate(period.end, input.today);
-  const completedDate = (t: { completedAt: string | null }) => (t.completedAt ? dateInZone(t.completedAt, timeZone) : null);
+  const completedDate = (t: { completedAt: string | null }) =>
+    t.completedAt ? dateInZone(t.completedAt, timeZone) : null;
 
   const completed = input.tasks
     .filter((t) => t.deletedAt === null && t.status === "done")
@@ -47,9 +48,10 @@ export function computeReview(input: ReviewInput): ReviewComputed {
     .map((t) => t.id)
     .sort();
 
+  // A task due today is not overdue until the day is over (matters for the period in progress).
   const overdue = input.tasks
     .filter((t) => t.deletedAt === null && t.status !== "cancelled" && t.dueDate !== null)
-    .filter((t) => isWithin(t.dueDate!, period.start, until))
+    .filter((t) => isWithin(t.dueDate!, period.start, until) && t.dueDate! < input.today)
     .filter((t) => {
       if (t.status === "open") return true;
       const d = completedDate(t);
@@ -81,7 +83,9 @@ export function computeReview(input: ReviewInput): ReviewComputed {
   const endKrw = hasData(endWorth) ? endWorth.netWorthKrw : null;
 
   const spending = input.receipts
-    .filter((r) => r.status === "confirmed" && r.confirmed && isWithin(r.confirmed.date, period.start, period.end))
+    .filter(
+      (r) => r.status === "confirmed" && r.confirmed && isWithin(r.confirmed.date, period.start, period.end),
+    )
     .map((r) => r.confirmed!.amountKrw);
 
   return {
@@ -92,7 +96,11 @@ export function computeReview(input: ReviewInput): ReviewComputed {
       startKrw,
       endKrw,
       deltaKrw: startKrw !== null && endKrw !== null ? sub(endKrw, startKrw) : null,
-      incomplete: startKrw === null || endKrw === null || startWorth.data === "incomplete" || endWorth.data === "incomplete",
+      incomplete:
+        startKrw === null ||
+        endKrw === null ||
+        startWorth.data === "incomplete" ||
+        endWorth.data === "incomplete",
     },
     spendingKrw: add("0", ...spending),
     notesCreated: input.notes.filter(
@@ -111,7 +119,8 @@ export function draftFromComputed(
   const challenges: string[] = [];
   const nextFocus: string[] = [];
 
-  if (computed.completedTasks.count > 0) wins.push(`할 일 ${computed.completedTasks.count}개를 완료했습니다.`);
+  if (computed.completedTasks.count > 0)
+    wins.push(`할 일 ${computed.completedTasks.count}개를 완료했습니다.`);
   for (const r of computed.routines) {
     const title = names.routines.get(r.routineId) ?? "루틴";
     if (r.expected > 0 && r.done / r.expected >= 0.8) wins.push(`‘${title}’ ${r.done}/${r.expected}회 달성`);

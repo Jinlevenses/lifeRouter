@@ -61,12 +61,15 @@ export function invalidTransition(message: string): DomainError {
   return new DomainError("STATE_TRANSITION_INVALID", message);
 }
 
-export function validationFailed(issues: { path: (string | number)[] | string; message: string }[]): DomainError {
-  return new DomainError(
-    "VALIDATION_FAILED",
-    "입력값을 확인하세요.",
-    { issues: issues.map((i) => ({ path: typeof i.path === "string" ? i.path.split(".") : i.path, message: i.message })) },
-  );
+export function validationFailed(
+  issues: { path: (string | number)[] | string; message: string }[],
+): DomainError {
+  return new DomainError("VALIDATION_FAILED", "입력값을 확인하세요.", {
+    issues: issues.map((i) => ({
+      path: typeof i.path === "string" ? i.path.split(".") : i.path,
+      message: i.message,
+    })),
+  });
 }
 
 /** PostgreSQL unique violation on a named constraint/index. */

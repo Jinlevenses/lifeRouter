@@ -40,7 +40,10 @@ async function lockItem(ctx: CommandContext, itemId: string) {
 }
 
 function firstLine(text: string | null, url: string | null): string {
-  const line = (text ?? "").split("\n").find((l) => l.trim())?.trim();
+  const line = (text ?? "")
+    .split("\n")
+    .find((l) => l.trim())
+    ?.trim();
   return (line || url || "캡처한 항목").slice(0, 200);
 }
 
@@ -72,7 +75,8 @@ export async function inboxConvert(ctx: CommandContext, p: P<"inbox.convert">): 
     });
     created = { type: "note", note };
   } else {
-    if (!item.attachmentId) throw new DomainError("VALIDATION_FAILED", "이미지가 있는 항목만 영수증으로 바꿀 수 있습니다.");
+    if (!item.attachmentId)
+      throw new DomainError("VALIDATION_FAILED", "이미지가 있는 항목만 영수증으로 바꿀 수 있습니다.");
     const [row] = await ctx.tx
       .insert(receipts)
       .values({
@@ -99,7 +103,12 @@ export async function inboxConvert(ctx: CommandContext, p: P<"inbox.convert">): 
     }
     created = { type: "receipt", receipt };
   }
-  const createdId = created.type === "task" ? created.task.id : created.type === "note" ? created.note.id : created.receipt.id;
+  const createdId =
+    created.type === "task"
+      ? created.task.id
+      : created.type === "note"
+        ? created.note.id
+        : created.receipt.id;
   const [row] = await ctx.tx
     .update(inboxItems)
     .set({ status: "converted", convertedType: created.type, convertedId: createdId, updatedAt: ctx.now })
@@ -152,7 +161,12 @@ export async function receiptConfirm(ctx: CommandContext, p: P<"receipt.confirm"
       status: "confirmed",
       confirmed,
       confirmedAt: ctx.now,
-      fields: applyOwnerFields(row.fields, { merchant: confirmed.merchant, amount: confirmed.amountKrw, currency: "KRW", date: confirmed.date }),
+      fields: applyOwnerFields(row.fields, {
+        merchant: confirmed.merchant,
+        amount: confirmed.amountKrw,
+        currency: "KRW",
+        date: confirmed.date,
+      }),
       updatedAt: ctx.now,
       version: sql`version + 1`,
     })
@@ -172,16 +186,28 @@ export async function receiptDiscard(ctx: CommandContext, p: P<"receipt.discard"
   return { receipt: toReceipt(updated!) };
 }
 
-export async function receiptRequestOcr(ctx: CommandContext, p: P<"receipt.requestOcr">): R<"receipt.requestOcr"> {
+export async function receiptRequestOcr(
+  ctx: CommandContext,
+  p: P<"receipt.requestOcr">,
+): R<"receipt.requestOcr"> {
   const [row] = await ctx.tx.select().from(receipts).where(eq(receipts.id, p.receiptId)).for("update");
   if (!row) throw notFound("영수증");
   requireDraft(row.status);
   if (!ctx.integrations.ocr.available || !row.attachmentId) {
-    throw new DomainError("OCR_UNAVAILABLE", "글자 인식(OCR)을 사용할 수 없습니다.", undefined, "금액·가게·날짜를 직접 입력해 확정하세요.");
+    throw new DomainError(
+      "OCR_UNAVAILABLE",
+      "글자 인식(OCR)을 사용할 수 없습니다.",
+      undefined,
+      "금액·가게·날짜를 직접 입력해 확정하세요.",
+    );
   }
   const [updated] = await ctx.tx
     .update(receipts)
-    .set({ ocr: { ...row.ocr, status: "pending", error: null }, updatedAt: ctx.now, version: sql`version + 1` })
+    .set({
+      ocr: { ...row.ocr, status: "pending", error: null },
+      updatedAt: ctx.now,
+      version: sql`version + 1`,
+    })
     .where(eq(receipts.id, row.id))
     .returning();
   ctx.afterCommit(async () => {

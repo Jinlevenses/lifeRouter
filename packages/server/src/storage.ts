@@ -8,11 +8,15 @@ export function dataDir(): string {
 }
 
 export function attachmentsDir(): string {
-  return process.env.LIFEROUTE_ATTACHMENTS_DIR ? resolve(process.env.LIFEROUTE_ATTACHMENTS_DIR) : join(dataDir(), "attachments");
+  return process.env.LIFEROUTE_ATTACHMENTS_DIR
+    ? resolve(process.env.LIFEROUTE_ATTACHMENTS_DIR)
+    : join(dataDir(), "attachments");
 }
 
 export function backupsDir(): string {
-  return process.env.LIFEROUTE_BACKUP_DIR ? resolve(process.env.LIFEROUTE_BACKUP_DIR) : join(dataDir(), "backups");
+  return process.env.LIFEROUTE_BACKUP_DIR
+    ? resolve(process.env.LIFEROUTE_BACKUP_DIR)
+    : join(dataDir(), "backups");
 }
 
 export function attachmentPath(sha256: string, dir = attachmentsDir()): string {

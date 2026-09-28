@@ -1,9 +1,24 @@
 import { createHash, randomUUID } from "node:crypto";
 import { and, eq, gte, lte, sql } from "drizzle-orm";
 import type { CommandPayload, CommandResultMap } from "@liferoute/contracts";
-import { computeReview, draftFromComputed, periodContaining, stableStringify, type Period } from "@liferoute/core";
+import {
+  computeReview,
+  draftFromComputed,
+  periodContaining,
+  stableStringify,
+  type Period,
+} from "@liferoute/core";
 import type { DbOrTx } from "../db/client";
-import { accounts, balanceSnapshots, checkIns, notes, receipts, reviews, routines, tasks } from "../db/schema";
+import {
+  accounts,
+  balanceSnapshots,
+  checkIns,
+  notes,
+  receipts,
+  reviews,
+  routines,
+  tasks,
+} from "../db/schema";
 import { DomainError, invalidTransition } from "../errors";
 import { toAccount, toCheckIn, toReceipt, toReview, toRoutine, toSnapshot, toTask } from "../mappers";
 import { assertVersion, type CommandContext } from "./context";
@@ -42,7 +57,10 @@ export async function buildReview(
     accounts: accountRows.map(toAccount),
     snapshots: snapshotRows.map(toSnapshot),
     receipts: receiptRows.map(toReceipt),
-    notes: noteRows.map((n) => ({ createdAt: n.createdAt.toISOString(), deletedAt: n.deletedAt?.toISOString() ?? null })),
+    notes: noteRows.map((n) => ({
+      createdAt: n.createdAt.toISOString(),
+      deletedAt: n.deletedAt?.toISOString() ?? null,
+    })),
   });
   const names = {
     tasks: new Map(taskList.map((t) => [t.id, t.title])),
@@ -56,7 +74,8 @@ export async function buildReview(
 }
 
 export async function reviewGenerate(ctx: CommandContext, p: P<"review.generate">): R<"review.generate"> {
-  if (p.date > ctx.today) throw new DomainError("VALIDATION_FAILED", "아직 오지 않은 기간은 검토할 수 없습니다.");
+  if (p.date > ctx.today)
+    throw new DomainError("VALIDATION_FAILED", "아직 오지 않은 기간은 검토할 수 없습니다.");
   const period = periodContaining(p.kind, p.date);
   const { computed, draft, inputsHash } = await buildReview(ctx.tx, period, ctx.today, ctx.settings);
   const [existing] = await ctx.tx.select().from(reviews).where(eq(reviews.key, period.key)).for("update");
@@ -65,7 +84,14 @@ export async function reviewGenerate(ctx: CommandContext, p: P<"review.generate"
     // Owner text is preserved on regeneration (review D-47).
     const [row] = await ctx.tx
       .update(reviews)
-      .set({ computed, draft, inputsHash, generatedAt: ctx.now, updatedAt: ctx.now, version: sql`version + 1` })
+      .set({
+        computed,
+        draft,
+        inputsHash,
+        generatedAt: ctx.now,
+        updatedAt: ctx.now,
+        version: sql`version + 1`,
+      })
       .where(eq(reviews.id, existing.id))
       .returning();
     return { review: toReview(row!), regenerated: true };

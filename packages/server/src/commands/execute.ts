@@ -39,10 +39,16 @@ const seeded = new WeakSet<object>();
  * idempotency → handler inside one transaction (versions checked under row locks) →
  * idempotency record in the same transaction → post-commit jobs.
  */
-export async function executeCommand(deps: ExecuteDeps, raw: unknown, actor: Actor = "owner"): Promise<ExecuteOutcome> {
+export async function executeCommand(
+  deps: ExecuteDeps,
+  raw: unknown,
+  actor: Actor = "owner",
+): Promise<ExecuteOutcome> {
   const parsed = CommandSchema.safeParse(raw);
   if (!parsed.success) {
-    return fail(validationFailed(parsed.error.issues.map((i) => ({ path: i.path.map(String), message: i.message }))));
+    return fail(
+      validationFailed(parsed.error.issues.map((i) => ({ path: i.path.map(String), message: i.message }))),
+    );
   }
   const command = parsed.data;
   if (actor === "ai" && AI_FORBIDDEN_COMMAND_PREFIXES.some((prefix) => command.type.startsWith(prefix))) {
@@ -52,7 +58,9 @@ export async function executeCommand(deps: ExecuteDeps, raw: unknown, actor: Act
   const now = deps.now?.() ?? new Date();
   const today = todayInZone(TIMEZONE, now);
   const key = command.idempotencyKey;
-  const payloadHash = createHash("sha256").update(stableStringify({ type: command.type, payload: command.payload })).digest("hex");
+  const payloadHash = createHash("sha256")
+    .update(stableStringify({ type: command.type, payload: command.payload }))
+    .digest("hex");
 
   if (key) {
     const replay = await findReplay(deps.db, key, payloadHash);
@@ -78,7 +86,10 @@ export async function executeCommand(deps: ExecuteDeps, raw: unknown, actor: Act
         integrations: deps.integrations,
         afterCommit: (fn) => after.push(fn),
       };
-      const handler = handlers[command.type] as HandlerMap[CommandType] as (c: CommandContext, p: unknown) => Promise<unknown>;
+      const handler = handlers[command.type] as HandlerMap[CommandType] as (
+        c: CommandContext,
+        p: unknown,
+      ) => Promise<unknown>;
       const result = await handler(ctx, command.payload);
       const ok = {
         ok: true,
@@ -132,7 +143,12 @@ async function findReplay(db: Db, key: string, payloadHash: string): Promise<Exe
   if (!existing) return null;
   if (existing.payloadHash !== payloadHash) {
     return fail(
-      new DomainError("IDEMPOTENCY_MISMATCH", "같은 요청 키로 다른 내용을 보냈습니다.", undefined, "새 요청으로 다시 시도하세요."),
+      new DomainError(
+        "IDEMPOTENCY_MISMATCH",
+        "같은 요청 키로 다른 내용을 보냈습니다.",
+        undefined,
+        "새 요청으로 다시 시도하세요.",
+      ),
     );
   }
   return { status: existing.statusCode, body: { ...(existing.response as CommandOk), replayed: true } };

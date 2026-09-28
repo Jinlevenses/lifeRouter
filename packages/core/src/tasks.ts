@@ -8,13 +8,19 @@ import { firstAfter } from "./recurrence";
  * - Top 3: at most three open tasks share a topDate, each with a unique rank 1..3. No auto carry-over.
  * - Recurring tasks roll: completing one creates the next occurrence strictly after max(dueDate, today).
  */
-export type TopPickResult = { ok: true; rank: TopRank } | { ok: false; code: "TOP_LIMIT_EXCEEDED" | "TOP_RANK_TAKEN" };
+export type TopPickResult =
+  { ok: true; rank: TopRank } | { ok: false; code: "TOP_LIMIT_EXCEEDED" | "TOP_RANK_TAKEN" };
 
 type TopTask = Pick<Task, "id" | "status" | "topDate" | "topRank" | "deletedAt">;
 
 function occupying(tasks: readonly TopTask[], date: string, excludeTaskId?: string): TopTask[] {
   return tasks.filter(
-    (t) => t.id !== excludeTaskId && t.deletedAt === null && t.status === "open" && t.topDate === date && t.topRank !== null,
+    (t) =>
+      t.id !== excludeTaskId &&
+      t.deletedAt === null &&
+      t.status === "open" &&
+      t.topDate === date &&
+      t.topRank !== null,
   );
 }
 

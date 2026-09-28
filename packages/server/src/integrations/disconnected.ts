@@ -1,4 +1,10 @@
-import { IntegrationError, type AiProvider, type BalanceProvider, type CalendarProvider, type OcrEngine } from "./types";
+import {
+  IntegrationError,
+  type AiProvider,
+  type BalanceProvider,
+  type CalendarProvider,
+  type OcrEngine,
+} from "./types";
 
 const disconnected = (what: string) => () => {
   throw new IntegrationError(`${what} is not configured`, "config");

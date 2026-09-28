@@ -2,7 +2,12 @@ import { describe, expect, it } from "vitest";
 import type { Recurrence } from "@liferoute/contracts";
 import { isOverdue, nextDueDate, pickTopRank, staleTopTasks, topTasksFor } from "../src/tasks";
 
-const t = (id: string, topDate: string | null, topRank: 1 | 2 | 3 | null, status: "open" | "done" = "open") => ({
+const t = (
+  id: string,
+  topDate: string | null,
+  topRank: 1 | 2 | 3 | null,
+  status: "open" | "done" = "open",
+) => ({
   id,
   status,
   topDate,

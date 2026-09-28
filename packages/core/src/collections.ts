@@ -25,7 +25,8 @@ export function validateRecordValues(
       continue;
     }
     const optionIds = new Set(prop.options.map((o) => o.id));
-    if (value.type === "status" && !optionIds.has(value.value)) issues.push({ path, message: "없는 상태 값입니다" });
+    if (value.type === "status" && !optionIds.has(value.value))
+      issues.push({ path, message: "없는 상태 값입니다" });
     if (value.type === "select" && value.value !== null && !optionIds.has(value.value)) {
       issues.push({ path, message: "없는 선택지입니다" });
     }
@@ -37,13 +38,15 @@ export function validateRecordValues(
     }
     if (value.type === "relation" && prop.relationCollectionId) {
       const target = prop.relationCollectionId;
-      if (value.value.some((id) => !relationExists(target, id))) issues.push({ path, message: "연결 대상이 없습니다" });
+      if (value.value.some((id) => !relationExists(target, id)))
+        issues.push({ path, message: "연결 대상이 없습니다" });
     }
   }
   for (const prop of properties) {
     if (!prop.required) continue;
     const v = values[prop.id];
-    if (!v || isEmptyValue(v)) issues.push({ path: `values.${prop.id}`, message: `${prop.name}은(는) 필수입니다` });
+    if (!v || isEmptyValue(v))
+      issues.push({ path: `values.${prop.id}`, message: `${prop.name}은(는) 필수입니다` });
   }
   return issues;
 }
@@ -69,10 +72,17 @@ export function pruneValues(
   values: Record<string, PropertyValue>,
 ): Record<string, PropertyValue> {
   const ids = new Set(properties.map((p) => p.id));
-  return Object.fromEntries(Object.entries(values).filter(([k, v]) => ids.has(k) && properties.find((p) => p.id === k)?.type === v.type));
+  return Object.fromEntries(
+    Object.entries(values).filter(
+      ([k, v]) => ids.has(k) && properties.find((p) => p.id === k)?.type === v.type,
+    ),
+  );
 }
 
-export function validateViews(properties: readonly CollectionProperty[], views: readonly CollectionView[]): DocIssue[] {
+export function validateViews(
+  properties: readonly CollectionProperty[],
+  views: readonly CollectionView[],
+): DocIssue[] {
   const issues: DocIssue[] = [];
   const byId = new Map(properties.map((p) => [p.id, p]));
   const ids = new Set<string>();
@@ -90,8 +100,10 @@ export function validateViews(properties: readonly CollectionProperty[], views: 
       const p = view.datePropertyId ? byId.get(view.datePropertyId) : undefined;
       if (!p || p.type !== "date") issues.push({ path, message: "캘린더는 날짜 속성이 필요합니다" });
     }
-    for (const s of view.sorts) if (!byId.has(s.propertyId)) issues.push({ path, message: "정렬 속성이 없습니다" });
-    for (const f of view.filters) if (!byId.has(f.propertyId)) issues.push({ path, message: "필터 속성이 없습니다" });
+    for (const s of view.sorts)
+      if (!byId.has(s.propertyId)) issues.push({ path, message: "정렬 속성이 없습니다" });
+    for (const f of view.filters)
+      if (!byId.has(f.propertyId)) issues.push({ path, message: "필터 속성이 없습니다" });
   }
   const propIds = new Set<string>();
   for (const p of properties) {

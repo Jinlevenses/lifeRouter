@@ -18,7 +18,13 @@ type R<T extends keyof CommandResultMap> = Promise<CommandResultMap[T]>;
 export function whenColumns(when: EventWhen) {
   return when.allDay
     ? { allDay: true, startAt: null, endAt: null, startDate: when.startDate, endDate: when.endDate }
-    : { allDay: false, startAt: new Date(when.start), endAt: new Date(when.end), startDate: null, endDate: null };
+    : {
+        allDay: false,
+        startAt: new Date(when.start),
+        endAt: new Date(when.end),
+        startDate: null,
+        endDate: null,
+      };
 }
 
 async function checkTask(ctx: CommandContext, taskId: string | null) {
@@ -28,7 +34,11 @@ async function checkTask(ctx: CommandContext, taskId: string | null) {
 }
 
 async function lockEvent(ctx: CommandContext, eventId: string, expectedVersion: number) {
-  const [row] = await ctx.tx.select().from(calendarEvents).where(eq(calendarEvents.id, eventId)).for("update");
+  const [row] = await ctx.tx
+    .select()
+    .from(calendarEvents)
+    .where(eq(calendarEvents.id, eventId))
+    .for("update");
   return assertVersion(row, expectedVersion, "calendarEvent", eventId, toCalendarEvent, "일정");
 }
 
@@ -41,7 +51,10 @@ function useProposal(): DomainError {
   );
 }
 
-export async function eventCreate(ctx: CommandContext, p: P<"calendar.event.create">): R<"calendar.event.create"> {
+export async function eventCreate(
+  ctx: CommandContext,
+  p: P<"calendar.event.create">,
+): R<"calendar.event.create"> {
   await checkTask(ctx, p.taskId);
   const [row] = await ctx.tx
     .insert(calendarEvents)
@@ -60,7 +73,10 @@ export async function eventCreate(ctx: CommandContext, p: P<"calendar.event.crea
   return { event: toCalendarEvent(row!) };
 }
 
-export async function eventUpdate(ctx: CommandContext, p: P<"calendar.event.update">): R<"calendar.event.update"> {
+export async function eventUpdate(
+  ctx: CommandContext,
+  p: P<"calendar.event.update">,
+): R<"calendar.event.update"> {
   const row = await lockEvent(ctx, p.eventId, p.expectedVersion);
   if (row.source !== "local") throw useProposal();
   if (p.patch.taskId !== undefined) await checkTask(ctx, p.patch.taskId);
@@ -80,7 +96,10 @@ export async function eventUpdate(ctx: CommandContext, p: P<"calendar.event.upda
   return { event: toCalendarEvent(updated!) };
 }
 
-export async function eventDelete(ctx: CommandContext, p: P<"calendar.event.delete">): R<"calendar.event.delete"> {
+export async function eventDelete(
+  ctx: CommandContext,
+  p: P<"calendar.event.delete">,
+): R<"calendar.event.delete"> {
   const row = await lockEvent(ctx, p.eventId, p.expectedVersion);
   if (row.source !== "local") throw useProposal();
   const [updated] = await ctx.tx
@@ -113,13 +132,25 @@ async function managedEvent(ctx: CommandContext, eventId: string, expectedEventV
     throw new DomainError("NOT_MANAGED_EVENT", "LifeRoute가 만든 Google 일정만 변경을 제안할 수 있습니다.");
   }
   if (event.version !== expectedEventVersion) {
-    throw versionConflict("calendarEvent", event.id, expectedEventVersion, event.version, toCalendarEvent(event));
+    throw versionConflict(
+      "calendarEvent",
+      event.id,
+      expectedEventVersion,
+      event.version,
+      toCalendarEvent(event),
+    );
   }
   return event;
 }
 
 export async function calendarPropose(ctx: CommandContext, p: P<"calendar.propose">): R<"calendar.propose"> {
-  const base = { id: p.id ?? randomUUID(), status: "pending" as const, createdBy: "owner" as const, createdAt: ctx.now, updatedAt: ctx.now };
+  const base = {
+    id: p.id ?? randomUUID(),
+    status: "pending" as const,
+    createdBy: "owner" as const,
+    createdAt: ctx.now,
+    updatedAt: ctx.now,
+  };
   let values: typeof proposals.$inferInsert;
   if (p.kind === "calendar.create") {
     await checkTask(ctx, p.taskId);
@@ -161,11 +192,21 @@ export async function calendarApprove(ctx: CommandContext, p: P<"calendar.approv
   }
   const [row] = await ctx.tx
     .update(proposals)
-    .set({ status: "approved", decidedAt: ctx.now, error: null, updatedAt: ctx.now, version: sql`version + 1` })
+    .set({
+      status: "approved",
+      decidedAt: ctx.now,
+      error: null,
+      updatedAt: ctx.now,
+      version: sql`version + 1`,
+    })
     .where(eq(proposals.id, proposal.id))
     .returning();
   ctx.afterCommit(async () => {
-    await ctx.jobs.send(JOB_NAMES.googleApplyProposal, { proposalId: proposal.id }, { singletonKey: proposal.id });
+    await ctx.jobs.send(
+      JOB_NAMES.googleApplyProposal,
+      { proposalId: proposal.id },
+      { singletonKey: proposal.id },
+    );
   });
   return { proposal: toProposal(row!), jobQueued: true };
 }

@@ -8,7 +8,13 @@ const finance: Settings["finance"] = {
   goalTargetDate: "2029-09-29",
   staleAfterDays: 35,
 };
-const acc = (id: string, kind: "asset" | "liability", included = true, liquid = false, archivedAt: string | null = null) => ({
+const acc = (
+  id: string,
+  kind: "asset" | "liability",
+  included = true,
+  liquid = false,
+  archivedAt: string | null = null,
+) => ({
   id,
   kind,
   included,
@@ -30,7 +36,12 @@ describe("UNIT-FIN-001 net worth (FR-005)", () => {
   it("subtracts all liabilities from included assets and keeps a liquid subtotal", () => {
     const summary = computeNetWorth({
       ...base,
-      accounts: [acc("cash", "asset", true, true), acc("pension", "asset"), acc("car", "asset", false), acc("loan", "liability")],
+      accounts: [
+        acc("cash", "asset", true, true),
+        acc("pension", "asset"),
+        acc("car", "asset", false),
+        acc("loan", "liability"),
+      ],
       snapshots: [
         snap("cash", "2026-09-20", "5000000"),
         snap("pension", "2026-09-01", "12000000.5"),
@@ -64,7 +75,12 @@ describe("UNIT-FIN-001 net worth (FR-005)", () => {
     const summary = computeNetWorth({
       ...base,
       accounts: [acc("a", "asset"), acc("closed", "liability", true, false, "2026-09-10T01:00:00.000Z")],
-      snapshots: [snap("a", "2026-09-01", "100"), snap("a", "2026-09-25", "150"), snap("a", "2026-10-01", "999"), snap("closed", "2026-09-01", "50")],
+      snapshots: [
+        snap("a", "2026-09-01", "100"),
+        snap("a", "2026-09-25", "150"),
+        snap("a", "2026-10-01", "999"),
+        snap("closed", "2026-09-01", "50"),
+      ],
     });
     expect(summary.netWorthKrw).toBe("150");
     const past = computeNetWorth({
@@ -88,8 +104,15 @@ describe("UNIT-FIN-001 net worth (FR-005)", () => {
     expect(g.remainingMonths).toBe(36);
     expect(g.monthlyRequiredKrw).toBe("2388889"); // ceil(85,999,999.5 / 36)
     expect(g.status).toBe("active");
-    expect(goalProgress("100000000", today, finance)).toMatchObject({ status: "achieved", monthlyRequiredKrw: null });
-    expect(goalProgress("0", "2029-09-30", finance)).toMatchObject({ status: "overdue", remainingMonths: 0, monthlyRequiredKrw: null });
+    expect(goalProgress("100000000", today, finance)).toMatchObject({
+      status: "achieved",
+      monthlyRequiredKrw: null,
+    });
+    expect(goalProgress("0", "2029-09-30", finance)).toMatchObject({
+      status: "overdue",
+      remainingMonths: 0,
+      monthlyRequiredKrw: null,
+    });
     // in the final partial month the remaining count never drops below 1
     expect(goalProgress("0", "2029-09-15", finance).remainingMonths).toBe(1);
   });

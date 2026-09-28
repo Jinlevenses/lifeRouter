@@ -15,7 +15,9 @@ async function lockRoutine(ctx: CommandContext, routineId: string, expectedVersi
 }
 
 export async function routineCreate(ctx: CommandContext, p: P<"routine.create">): R<"routine.create"> {
-  const [max] = await ctx.tx.select({ v: sql<number>`coalesce(max(${routines.sortOrder}), 0)` }).from(routines);
+  const [max] = await ctx.tx
+    .select({ v: sql<number>`coalesce(max(${routines.sortOrder}), 0)` })
+    .from(routines);
   const [row] = await ctx.tx
     .insert(routines)
     .values({
@@ -35,7 +37,12 @@ export async function routineUpdate(ctx: CommandContext, p: P<"routine.update">)
   await lockRoutine(ctx, p.routineId, p.expectedVersion);
   const [row] = await ctx.tx
     .update(routines)
-    .set({ ...p.patch, ...(p.patch.title ? { title: p.patch.title.trim() } : {}), updatedAt: ctx.now, version: sql`version + 1` })
+    .set({
+      ...p.patch,
+      ...(p.patch.title ? { title: p.patch.title.trim() } : {}),
+      updatedAt: ctx.now,
+      version: sql`version + 1`,
+    })
     .where(eq(routines.id, p.routineId))
     .returning();
   return { routine: toRoutine(row!) };
@@ -63,7 +70,14 @@ export async function checkInRecord(ctx: CommandContext, p: P<"checkin.record">)
   if (p.date > ctx.today) throw new DomainError("VALIDATION_FAILED", "미래 날짜에는 기록할 수 없습니다.");
   const [row] = await ctx.tx
     .insert(checkIns)
-    .values({ id: randomUUID(), routineId: p.routineId, date: p.date, status: p.status, note: p.note, recordedAt: ctx.now })
+    .values({
+      id: randomUUID(),
+      routineId: p.routineId,
+      date: p.date,
+      status: p.status,
+      note: p.note,
+      recordedAt: ctx.now,
+    })
     .onConflictDoUpdate({
       target: [checkIns.routineId, checkIns.date],
       set: { status: p.status, note: p.note, recordedAt: ctx.now },

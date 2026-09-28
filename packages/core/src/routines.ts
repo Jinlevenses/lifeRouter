@@ -16,7 +16,11 @@ export function isExpected(routine: RoutineLike, date: string): boolean {
   return routine.deletedAt === null && routine.status === "active" && occursOn(routine.schedule, date);
 }
 
-export function dayState(routine: RoutineLike, checkIn: CheckInLike | undefined, date: string): RoutineDayState {
+export function dayState(
+  routine: RoutineLike,
+  checkIn: CheckInLike | undefined,
+  date: string,
+): RoutineDayState {
   if (checkIn) return checkIn.status;
   return isExpected(routine, date) ? "unrecorded" : "notExpected";
 }
@@ -63,7 +67,11 @@ export function routineStats(
 }
 
 /** Consecutive expected days marked done, counting back from `today` (today counts only if recorded). */
-export function currentStreak(routine: RoutineLike, checkIns: ReadonlyMap<string, CheckInLike>, today: string): number {
+export function currentStreak(
+  routine: RoutineLike,
+  checkIns: ReadonlyMap<string, CheckInLike>,
+  today: string,
+): number {
   let streak = 0;
   if (routine.schedule.startDate > today) return 0;
   const from = maxDate(routine.schedule.startDate, addDays(today, -400));

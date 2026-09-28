@@ -81,8 +81,11 @@ export async function restoreTables(db: Db, dump: TableDump): Promise<Record<str
   await db.transaction(async (tx) => {
     for (const table of DUMP_TABLES) {
       const name = getTableName(table);
-      const [row] = await tx.execute<{ n: number }>(sql`select count(*)::int as n from ${table}`).then((r) => r.rows);
-      if (row && Number(row.n) > 0) throw new Error(`Target database is not empty (${name}). Restore only into a fresh database.`);
+      const [row] = await tx
+        .execute<{ n: number }>(sql`select count(*)::int as n from ${table}`)
+        .then((r) => r.rows);
+      if (row && Number(row.n) > 0)
+        throw new Error(`Target database is not empty (${name}). Restore only into a fresh database.`);
     }
     for (const table of DUMP_TABLES) {
       const name = getTableName(table);

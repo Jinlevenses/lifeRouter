@@ -28,7 +28,10 @@ export function snapshotAmountKrw(amount: string, currency: string, fxRate: stri
 }
 
 /** Latest snapshot per account with asOf <= `asOf` (ties broken by later createdAt order in input). */
-export function latestSnapshots<T extends SnapshotLike>(snapshots: readonly T[], asOf: string): Map<string, T> {
+export function latestSnapshots<T extends SnapshotLike>(
+  snapshots: readonly T[],
+  asOf: string,
+): Map<string, T> {
   const latest = new Map<string, T>();
   for (const s of snapshots) {
     if (compareDate(s.asOf, asOf) > 0) continue;
@@ -39,7 +42,11 @@ export function latestSnapshots<T extends SnapshotLike>(snapshots: readonly T[],
 }
 
 /** Accounts that count on `asOf`: not archived on or before that calendar day (Asia/Seoul). */
-export function activeAccountsOn<T extends AccountLike>(accounts: readonly T[], asOf: string, timeZone: string): T[] {
+export function activeAccountsOn<T extends AccountLike>(
+  accounts: readonly T[],
+  asOf: string,
+  timeZone: string,
+): T[] {
   return accounts.filter((a) => a.archivedAt === null || dateInZone(a.archivedAt, timeZone) > asOf);
 }
 

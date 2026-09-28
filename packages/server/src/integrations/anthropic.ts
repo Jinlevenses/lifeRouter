@@ -33,7 +33,9 @@ export class AnthropicProvider implements AiProvider {
 
   async analyze(input: AiAnalyzeInput): Promise<AiAnalyzeResult> {
     const documents = input.documents
-      .map((d, i) => `<note index="${i + 1}" title="${escapeAttr(d.title || "제목 없음")}">\n${d.text}\n</note>`)
+      .map(
+        (d, i) => `<note index="${i + 1}" title="${escapeAttr(d.title || "제목 없음")}">\n${d.text}\n</note>`,
+      )
       .join("\n\n");
     const modern = MODERN.test(input.model);
     try {
@@ -57,17 +59,24 @@ export class AnthropicProvider implements AiProvider {
         .flatMap((block) => (block.type === "text" ? [block.text] : []))
         .join("\n")
         .trim();
-      const suffix = response.stop_reason === "max_tokens" ? "\n\n(출력 한도에 도달해 일부만 표시됩니다.)" : "";
+      const suffix =
+        response.stop_reason === "max_tokens" ? "\n\n(출력 한도에 도달해 일부만 표시됩니다.)" : "";
       const usage = response.usage;
       return {
         text: `${text}${suffix}`,
         model: response.model,
-        inputTokens: usage.input_tokens + (usage.cache_creation_input_tokens ?? 0) + (usage.cache_read_input_tokens ?? 0),
+        inputTokens:
+          usage.input_tokens +
+          (usage.cache_creation_input_tokens ?? 0) +
+          (usage.cache_read_input_tokens ?? 0),
         outputTokens: usage.output_tokens,
       };
     } catch (error) {
       if (error instanceof IntegrationError) throw error;
-      if (error instanceof Anthropic.AuthenticationError || error instanceof Anthropic.PermissionDeniedError) {
+      if (
+        error instanceof Anthropic.AuthenticationError ||
+        error instanceof Anthropic.PermissionDeniedError
+      ) {
         throw new IntegrationError("AI API 키가 올바르지 않습니다.", "auth");
       }
       if (error instanceof Anthropic.RateLimitError || error instanceof Anthropic.InternalServerError) {

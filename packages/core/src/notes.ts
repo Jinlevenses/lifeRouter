@@ -38,7 +38,9 @@ export function textToDocument(text: string): DocumentNode {
   const lines = text.replace(/\r\n?/g, "\n").split("\n");
   return {
     type: "doc",
-    content: lines.map((line) => (line ? { type: "paragraph", content: [{ type: "text", text: line }] } : { type: "paragraph" })),
+    content: lines.map((line) =>
+      line ? { type: "paragraph", content: [{ type: "text", text: line }] } : { type: "paragraph" },
+    ),
   };
 }
 
@@ -61,7 +63,8 @@ export function validateDocument(doc: DocumentNode): DocIssue[] {
     }
     if (!NODE_TYPES.has(node.type)) issues.push({ path, message: `허용되지 않는 노드: ${node.type}` });
     if (node.type === "text") {
-      if (typeof node.text !== "string" || node.text.length === 0) issues.push({ path, message: "빈 text 노드" });
+      if (typeof node.text !== "string" || node.text.length === 0)
+        issues.push({ path, message: "빈 text 노드" });
       for (const [i, mark] of (node.marks ?? []).entries()) checkMark(mark, `${path}.marks[${i}]`, issues);
     } else if (node.marks?.length) {
       issues.push({ path, message: "mark는 text 노드에만 붙을 수 있습니다" });
@@ -74,7 +77,8 @@ export function validateDocument(doc: DocumentNode): DocIssue[] {
     }
     if (node.type === "heading") {
       const level = node.attrs?.level;
-      if (typeof level !== "number" || level < 1 || level > 6) issues.push({ path, message: "heading level 1~6" });
+      if (typeof level !== "number" || level < 1 || level > 6)
+        issues.push({ path, message: "heading level 1~6" });
     }
     for (const [i, child] of (node.content ?? []).entries()) walk(child, `${path}.content[${i}]`, depth + 1);
   };
@@ -114,7 +118,10 @@ export function deriveText(doc: DocumentNode): string {
     for (const child of node.content ?? []) walk(child);
   };
   walk(doc);
-  return lines.join("\n").replace(/\n{3,}/g, "\n\n").trim();
+  return lines
+    .join("\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
 }
 
 export function excerpt(text: string, max = 200): string {
@@ -192,7 +199,11 @@ export interface MarkdownOptions {
   attachmentUrl: (attachmentId: string) => string;
 }
 
-function renderBlocks(nodes: readonly DocumentNode[] | undefined, opts: MarkdownOptions, indent = ""): string[] {
+function renderBlocks(
+  nodes: readonly DocumentNode[] | undefined,
+  opts: MarkdownOptions,
+  indent = "",
+): string[] {
   const out: string[] = [];
   for (const node of nodes ?? []) {
     switch (node.type) {
@@ -214,7 +225,9 @@ function renderBlocks(nodes: readonly DocumentNode[] | undefined, opts: Markdown
               : node.type === "taskList"
                 ? `- [${item.attrs?.checked ? "x" : " "}]`
                 : "-";
-          const [first = "", ...rest] = renderBlocks(item.content, opts, `${indent}  `).filter((l) => l !== "");
+          const [first = "", ...rest] = renderBlocks(item.content, opts, `${indent}  `).filter(
+            (l) => l !== "",
+          );
           out.push(`${indent}${marker} ${first.trimStart()}`);
           out.push(...rest);
         });
@@ -224,7 +237,11 @@ function renderBlocks(nodes: readonly DocumentNode[] | undefined, opts: Markdown
         break;
       case "codeBlock": {
         const lang = typeof node.attrs?.language === "string" ? node.attrs.language : "";
-        out.push(`${indent}\`\`\`${lang}`, ...(node.content ?? []).map((t) => t.text ?? ""), `${indent}\`\`\``);
+        out.push(
+          `${indent}\`\`\`${lang}`,
+          ...(node.content ?? []).map((t) => t.text ?? ""),
+          `${indent}\`\`\``,
+        );
         break;
       }
       case "horizontalRule":
@@ -253,6 +270,9 @@ function renderBlocks(nodes: readonly DocumentNode[] | undefined, opts: Markdown
 }
 
 export function toMarkdown(title: string, doc: DocumentNode, opts: MarkdownOptions): string {
-  const body = renderBlocks(doc.content, opts).join("\n").replace(/\n{3,}/g, "\n\n").trim();
+  const body = renderBlocks(doc.content, opts)
+    .join("\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
   return `${title ? `# ${title.replace(/\n/g, " ")}\n\n` : ""}${body}\n`;
 }

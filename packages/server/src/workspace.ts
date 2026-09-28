@@ -72,14 +72,14 @@ export async function loadWorkspace(db: Db, now: Date = new Date()): Promise<Wor
       .select()
       .from(s.tasks)
       .where(
-        and(
-          isNull(s.tasks.deletedAt),
-          or(eq(s.tasks.status, "open"), gte(s.tasks.updatedAt, fromInstant)),
-        ),
+        and(isNull(s.tasks.deletedAt), or(eq(s.tasks.status, "open"), gte(s.tasks.updatedAt, fromInstant))),
       )
       .orderBy(s.tasks.sortOrder),
     db.select().from(s.routines).where(isNull(s.routines.deletedAt)).orderBy(s.routines.sortOrder),
-    db.select().from(s.checkIns).where(and(gte(s.checkIns.date, from), lte(s.checkIns.date, today))),
+    db
+      .select()
+      .from(s.checkIns)
+      .where(and(gte(s.checkIns.date, from), lte(s.checkIns.date, today))),
     db.select().from(s.accounts).orderBy(s.accounts.sortOrder),
     db.select().from(s.balanceSnapshots).orderBy(s.balanceSnapshots.asOf),
     db
@@ -108,7 +108,11 @@ export async function loadWorkspace(db: Db, now: Date = new Date()): Promise<Wor
       .where(eq(s.noteLinks.targetType, "note"))
       .groupBy(s.noteLinks.targetId),
     db.select().from(s.collections).where(isNull(s.collections.deletedAt)),
-    db.select().from(s.collectionRecords).where(isNull(s.collectionRecords.deletedAt)).orderBy(s.collectionRecords.sortOrder),
+    db
+      .select()
+      .from(s.collectionRecords)
+      .where(isNull(s.collectionRecords.deletedAt))
+      .orderBy(s.collectionRecords.sortOrder),
     db
       .select()
       .from(s.calendarEvents)
@@ -116,15 +120,28 @@ export async function loadWorkspace(db: Db, now: Date = new Date()): Promise<Wor
         and(
           isNull(s.calendarEvents.deletedAt),
           or(
-            and(eq(s.calendarEvents.allDay, false), lte(s.calendarEvents.startAt, toInstant), gte(s.calendarEvents.endAt, fromInstant)),
-            and(eq(s.calendarEvents.allDay, true), lte(s.calendarEvents.startDate, to), gte(s.calendarEvents.endDate, from)),
+            and(
+              eq(s.calendarEvents.allDay, false),
+              lte(s.calendarEvents.startAt, toInstant),
+              gte(s.calendarEvents.endAt, fromInstant),
+            ),
+            and(
+              eq(s.calendarEvents.allDay, true),
+              lte(s.calendarEvents.startDate, to),
+              gte(s.calendarEvents.endDate, from),
+            ),
           ),
         ),
       ),
     db
       .select()
       .from(s.proposals)
-      .where(or(inArray(s.proposals.status, ["pending", "approved", "failed"]), gte(s.proposals.updatedAt, fromInstant)))
+      .where(
+        or(
+          inArray(s.proposals.status, ["pending", "approved", "failed"]),
+          gte(s.proposals.updatedAt, fromInstant),
+        ),
+      )
       .orderBy(desc(s.proposals.createdAt)),
     db
       .select()
@@ -141,7 +158,10 @@ export async function loadWorkspace(db: Db, now: Date = new Date()): Promise<Wor
     db.select().from(s.connections),
     db.select().from(s.guidanceSources).orderBy(desc(s.guidanceSources.checkedAt)),
     db.select().from(s.apiTokens).orderBy(desc(s.apiTokens.createdAt)),
-    db.select().from(s.opsState).where(inArray(s.opsState.key, ["worker.heartbeat", "backup.last"])),
+    db
+      .select()
+      .from(s.opsState)
+      .where(inArray(s.opsState.key, ["worker.heartbeat", "backup.last"])),
   ]);
 
   const settings = m.toSettings(settingsRow[0]!);
@@ -154,7 +174,13 @@ export async function loadWorkspace(db: Db, now: Date = new Date()): Promise<Wor
   const linkCountMap = new Map(linkCounts.map((r) => [r.id, Number(r.n)]));
   const backlinkCountMap = new Map(backlinkCounts.map((r) => [r.id, Number(r.n)]));
 
-  const netWorth = computeNetWorth({ accounts, snapshots, today, finance: settings.finance, timeZone: TIMEZONE });
+  const netWorth = computeNetWorth({
+    accounts,
+    snapshots,
+    today,
+    finance: settings.finance,
+    timeZone: TIMEZONE,
+  });
   const todayView = buildTodayView(today, tasks, routines, checkIns, calendarEvents);
   const ops = Object.fromEntries(opsRows.map((r) => [r.key, r.value])) as {
     "worker.heartbeat"?: { at: string };
@@ -177,7 +203,9 @@ export async function loadWorkspace(db: Db, now: Date = new Date()): Promise<Wor
     accounts,
     snapshots,
     netWorth,
-    notes: noteRows.map((n) => m.toNoteSummary(n, linkCountMap.get(n.id) ?? 0, backlinkCountMap.get(n.id) ?? 0)),
+    notes: noteRows.map((n) =>
+      m.toNoteSummary(n, linkCountMap.get(n.id) ?? 0, backlinkCountMap.get(n.id) ?? 0),
+    ),
     collections: collectionRows.map(m.toCollection),
     collectionRecords: recordRows.map(m.toRecord),
     calendarEvents,
@@ -193,7 +221,9 @@ export async function loadWorkspace(db: Db, now: Date = new Date()): Promise<Wor
     ops: {
       lastBackupAt: ops["backup.last"]?.at ?? null,
       lastBackupOk: ops["backup.last"]?.ok ?? null,
-      workerAlive: ops["worker.heartbeat"] ? now.getTime() - Date.parse(ops["worker.heartbeat"].at) < WORKER_STALE_MS : false,
+      workerAlive: ops["worker.heartbeat"]
+        ? now.getTime() - Date.parse(ops["worker.heartbeat"].at) < WORKER_STALE_MS
+        : false,
     },
   };
 }
@@ -215,7 +245,13 @@ export function buildTodayView(
     date: today,
     topTaskIds: topTasksFor(tasks, today).map((t) => t.id),
     plannedTaskIds: tasks
-      .filter((t) => t.deletedAt === null && t.status === "open" && t.plannedAt && dateInZone(t.plannedAt, TIMEZONE) === today)
+      .filter(
+        (t) =>
+          t.deletedAt === null &&
+          t.status === "open" &&
+          t.plannedAt &&
+          dateInZone(t.plannedAt, TIMEZONE) === today,
+      )
       .sort((a, b) => (a.plannedAt! < b.plannedAt! ? -1 : 1))
       .map((t) => t.id),
     calendarEventIds: events

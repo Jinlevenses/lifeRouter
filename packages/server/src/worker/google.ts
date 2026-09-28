@@ -4,18 +4,27 @@ import type { CalendarEventDraft } from "@liferoute/contracts";
 import { addDays, maxDate } from "@liferoute/core";
 import type { Db } from "../db/client";
 import { calendarEvents, connections, proposals } from "../db/schema";
-import { IntegrationError, type CalendarProvider, type GoogleEvent, type GoogleTokens } from "../integrations";
+import {
+  IntegrationError,
+  type CalendarProvider,
+  type GoogleEvent,
+  type GoogleTokens,
+} from "../integrations";
 import { log, maskSecrets } from "../logger";
 import { openJson, sealJson } from "../ops/secret-box";
 
 /** Google read sync and approved managed writes (review D-41/D-42). */
 async function tokensFor(db: Db, provider: CalendarProvider) {
   const [conn] = await db.select().from(connections).where(eq(connections.provider, "google"));
-  if (!conn || !conn.secret || conn.status === "disconnected" || conn.status === "reauth_required") return null;
+  if (!conn || !conn.secret || conn.status === "disconnected" || conn.status === "reauth_required")
+    return null;
   const stored = openJson<GoogleTokens>(conn.secret);
   const fresh = await provider.refresh(stored);
   if (fresh.accessToken !== stored.accessToken) {
-    await db.update(connections).set({ secret: sealJson(fresh), updatedAt: new Date() }).where(eq(connections.id, conn.id));
+    await db
+      .update(connections)
+      .set({ secret: sealJson(fresh), updatedAt: new Date() })
+      .where(eq(connections.id, conn.id));
   }
   return { conn, tokens: fresh };
 }
@@ -25,7 +34,13 @@ async function markFailure(db: Db, error: unknown) {
   const status = error instanceof IntegrationError && error.kind === "auth" ? "reauth_required" : "failed";
   await db
     .update(connections)
-    .set({ status, lastError: message, lastSyncAt: new Date(), updatedAt: new Date(), version: sql`version + 1` })
+    .set({
+      status,
+      lastError: message,
+      lastSyncAt: new Date(),
+      updatedAt: new Date(),
+      version: sql`version + 1`,
+    })
     .where(eq(connections.provider, "google"));
 }
 
@@ -37,15 +52,19 @@ function eventColumns(e: GoogleEvent) {
     return { allDay: true, startAt: null, endAt: null, startDate: start, endDate: end };
   }
   return {
-        allDay: false,
-        startAt: new Date(e.start?.dateTime ?? Date.now()),
-        endAt: new Date(e.end?.dateTime ?? e.start?.dateTime ?? Date.now()),
-        startDate: null,
-        endDate: null,
-      };
+    allDay: false,
+    startAt: new Date(e.start?.dateTime ?? Date.now()),
+    endAt: new Date(e.end?.dateTime ?? e.start?.dateTime ?? Date.now()),
+    startDate: null,
+    endDate: null,
+  };
 }
 
-export async function googleSync(db: Db, provider: CalendarProvider, now = new Date()): Promise<{ upserted: number }> {
+export async function googleSync(
+  db: Db,
+  provider: CalendarProvider,
+  now = new Date(),
+): Promise<{ upserted: number }> {
   if (!provider.available) return { upserted: 0 };
   const ctx = await tokensFor(db, provider).catch(async (error) => {
     await markFailure(db, error);
@@ -53,7 +72,12 @@ export async function googleSync(db: Db, provider: CalendarProvider, now = new D
   });
   if (!ctx) return { upserted: 0 };
   const { conn, tokens } = ctx;
-  const calendars = [...new Set([...(conn.meta.calendarIds ?? []), ...(conn.meta.managedCalendarId ? [conn.meta.managedCalendarId] : [])])];
+  const calendars = [
+    ...new Set([
+      ...(conn.meta.calendarIds ?? []),
+      ...(conn.meta.managedCalendarId ? [conn.meta.managedCalendarId] : []),
+    ]),
+  ];
   const syncState = { ...(conn.syncState as Record<string, string>) };
   let upserted = 0;
   try {
@@ -67,7 +91,9 @@ export async function googleSync(db: Db, provider: CalendarProvider, now = new D
       } catch (error) {
         if (error instanceof IntegrationError && error.kind === "gone") {
           delete syncState[calendarId]; // 410: full resync (Google sync guide)
-          result = await provider.listEvents(tokens, calendarId, { timeMin: new Date(now.getTime() - 60 * 86_400_000).toISOString() });
+          result = await provider.listEvents(tokens, calendarId, {
+            timeMin: new Date(now.getTime() - 60 * 86_400_000).toISOString(),
+          });
         } else throw error;
       }
       for (const e of result.events) {
@@ -77,7 +103,14 @@ export async function googleSync(db: Db, provider: CalendarProvider, now = new D
     }
     await db
       .update(connections)
-      .set({ status: "connected", syncState, lastSyncAt: now, lastSuccessAt: now, lastError: null, updatedAt: now })
+      .set({
+        status: "connected",
+        syncState,
+        lastSyncAt: now,
+        lastSuccessAt: now,
+        lastError: null,
+        updatedAt: now,
+      })
       .where(eq(connections.id, conn.id));
   } catch (error) {
     log.error("google.sync_failed", error);
@@ -87,7 +120,13 @@ export async function googleSync(db: Db, provider: CalendarProvider, now = new D
   return { upserted };
 }
 
-async function upsertGoogleEvent(db: Db, connectionId: string, calendarId: string, e: GoogleEvent, now: Date): Promise<number> {
+async function upsertGoogleEvent(
+  db: Db,
+  connectionId: string,
+  calendarId: string,
+  e: GoogleEvent,
+  now: Date,
+): Promise<number> {
   const [existing] = await db
     .select()
     .from(calendarEvents)
@@ -98,7 +137,14 @@ async function upsertGoogleEvent(db: Db, connectionId: string, calendarId: strin
   if (cancelled) {
     await db
       .update(calendarEvents)
-      .set({ deletedAt: now, status: "cancelled", etag: e.etag, lastSyncedAt: now, updatedAt: now, version: sql`version + 1` })
+      .set({
+        deletedAt: now,
+        status: "cancelled",
+        etag: e.etag,
+        lastSyncedAt: now,
+        updatedAt: now,
+        version: sql`version + 1`,
+      })
       .where(eq(calendarEvents.id, existing!.id));
     return 1;
   }
@@ -120,28 +166,41 @@ async function upsertGoogleEvent(db: Db, connectionId: string, calendarId: strin
       .set({ ...values, updatedAt: now, version: sql`version + 1` })
       .where(eq(calendarEvents.id, existing.id));
   } else {
-    await db.insert(calendarEvents).values({
-      id: e.extendedProperties?.private?.["liferoute.id"] ?? randomUUID(),
-      source: "google",
-      connectionId,
-      externalCalendarId: calendarId,
-      externalId: e.id,
-      ...values,
-      createdAt: now,
-      updatedAt: now,
-    }).onConflictDoNothing();
+    await db
+      .insert(calendarEvents)
+      .values({
+        id: e.extendedProperties?.private?.["liferoute.id"] ?? randomUUID(),
+        source: "google",
+        connectionId,
+        externalCalendarId: calendarId,
+        externalId: e.id,
+        ...values,
+        createdAt: now,
+        updatedAt: now,
+      })
+      .onConflictDoNothing();
   }
   return 1;
 }
 
 /** Applies an approved proposal. Conflicts (etag mismatch) fail the proposal instead of overwriting. */
-export async function applyProposal(db: Db, provider: CalendarProvider, proposalId: string, now = new Date()): Promise<void> {
+export async function applyProposal(
+  db: Db,
+  provider: CalendarProvider,
+  proposalId: string,
+  now = new Date(),
+): Promise<void> {
   const [proposal] = await db.select().from(proposals).where(eq(proposals.id, proposalId));
   if (!proposal || proposal.status !== "approved") return;
   const fail = async (message: string) => {
     await db
       .update(proposals)
-      .set({ status: "failed", error: maskSecrets(message), updatedAt: new Date(), version: sql`version + 1` })
+      .set({
+        status: "failed",
+        error: maskSecrets(message),
+        updatedAt: new Date(),
+        version: sql`version + 1`,
+      })
       .where(eq(proposals.id, proposal.id));
   };
   const ctx = await tokensFor(db, provider).catch(() => null);
@@ -152,7 +211,12 @@ export async function applyProposal(db: Db, provider: CalendarProvider, proposal
       const calendarId = proposal.targetCalendarId ?? conn.meta.managedCalendarId;
       if (!calendarId) return fail("LifeRoute 전용 캘린더가 없습니다. 연결을 다시 설정하세요.");
       const localId = randomUUID();
-      const created = await provider.insertEvent(tokens, calendarId, proposal.draft as CalendarEventDraft, localId);
+      const created = await provider.insertEvent(
+        tokens,
+        calendarId,
+        proposal.draft as CalendarEventDraft,
+        localId,
+      );
       await db.insert(calendarEvents).values({
         id: localId,
         source: "google",
@@ -173,17 +237,33 @@ export async function applyProposal(db: Db, provider: CalendarProvider, proposal
       });
       await db
         .update(proposals)
-        .set({ status: "applied", calendarEventId: localId, appliedAt: now, updatedAt: now, version: sql`version + 1` })
+        .set({
+          status: "applied",
+          calendarEventId: localId,
+          appliedAt: now,
+          updatedAt: now,
+          version: sql`version + 1`,
+        })
         .where(eq(proposals.id, proposal.id));
       return;
     }
-    const [event] = await db.select().from(calendarEvents).where(eq(calendarEvents.id, proposal.calendarEventId!));
-    if (!event || !event.managed || !event.externalId || !event.externalCalendarId) return fail("대상 일정이 없거나 관리 대상이 아닙니다.");
+    const [event] = await db
+      .select()
+      .from(calendarEvents)
+      .where(eq(calendarEvents.id, proposal.calendarEventId!));
+    if (!event || !event.managed || !event.externalId || !event.externalCalendarId)
+      return fail("대상 일정이 없거나 관리 대상이 아닙니다.");
     if (proposal.expectedEventVersion !== null && event.version !== proposal.expectedEventVersion) {
       return fail("승인 후 일정이 바뀌었습니다. 새로 제안하세요.");
     }
     if (proposal.kind === "calendar.update") {
-      const updated = await provider.patchEvent(tokens, event.externalCalendarId, event.externalId, event.etag, proposal.draft!);
+      const updated = await provider.patchEvent(
+        tokens,
+        event.externalCalendarId,
+        event.externalId,
+        event.etag,
+        proposal.draft!,
+      );
       await db
         .update(calendarEvents)
         .set({
@@ -212,7 +292,10 @@ export async function applyProposal(db: Db, provider: CalendarProvider, proposal
   } catch (error) {
     if (error instanceof IntegrationError && error.kind === "conflict") {
       if (proposal.calendarEventId) {
-        await db.update(calendarEvents).set({ syncStatus: "conflict" }).where(eq(calendarEvents.id, proposal.calendarEventId));
+        await db
+          .update(calendarEvents)
+          .set({ syncStatus: "conflict" })
+          .where(eq(calendarEvents.id, proposal.calendarEventId));
       }
       return fail("Google에서 먼저 바뀐 일정입니다. 동기화 후 다시 제안하세요.");
     }
@@ -224,6 +307,18 @@ export async function applyProposal(db: Db, provider: CalendarProvider, proposal
 
 function draftColumns(draft: CalendarEventDraft) {
   return draft.when.allDay
-    ? { allDay: true, startAt: null, endAt: null, startDate: draft.when.startDate, endDate: draft.when.endDate }
-    : { allDay: false, startAt: new Date(draft.when.start), endAt: new Date(draft.when.end), startDate: null, endDate: null };
+    ? {
+        allDay: true,
+        startAt: null,
+        endAt: null,
+        startDate: draft.when.startDate,
+        endDate: draft.when.endDate,
+      }
+    : {
+        allDay: false,
+        startAt: new Date(draft.when.start),
+        endAt: new Date(draft.when.end),
+        startDate: null,
+        endDate: null,
+      };
 }

@@ -108,9 +108,7 @@ export const IdSchema = z.uuid();
 export type Id = z.infer<typeof IdSchema>;
 
 /** 'YYYY-MM' (Asia/Seoul 기준 월). AI 원장·검토 키에 사용. */
-export const MonthKeySchema = z
-  .string()
-  .regex(/^\d{4}-(?:0[1-9]|1[0-2])$/);
+export const MonthKeySchema = z.string().regex(/^\d{4}-(?:0[1-9]|1[0-2])$/);
 export type MonthKey = z.infer<typeof MonthKeySchema>;
 
 /** ISO 4217 통화 코드. */
@@ -327,8 +325,7 @@ const accountShape = {
   ...auditFields,
   ...versionFields,
 };
-const isAssetCategory = (c: AccountCategory): boolean =>
-  (ASSET_CATEGORIES as readonly string[]).includes(c);
+const isAssetCategory = (c: AccountCategory): boolean => (ASSET_CATEGORIES as readonly string[]).includes(c);
 export const AccountSchema = z
   .object(accountShape)
   .refine((a) => a.kind !== "liability" || (a.included && !a.liquid), {
@@ -392,7 +389,15 @@ export const DOCUMENT_NODE_TYPES = [
   "tableCell",
   "tableHeader",
 ] as const;
-export const DOCUMENT_MARK_TYPES = ["bold", "italic", "underline", "strike", "code", "link", "highlight"] as const;
+export const DOCUMENT_MARK_TYPES = [
+  "bold",
+  "italic",
+  "underline",
+  "strike",
+  "code",
+  "link",
+  "highlight",
+] as const;
 export const DocumentNodeTypeSchema = z.enum(DOCUMENT_NODE_TYPES);
 export const DocumentMarkTypeSchema = z.enum(DOCUMENT_MARK_TYPES);
 export type DocumentNodeType = z.infer<typeof DocumentNodeTypeSchema>;
@@ -668,7 +673,14 @@ export const CalendarEventDraftSchema = z.object({
 export type CalendarEventDraft = z.infer<typeof CalendarEventDraftSchema>;
 
 export const ProposalKindSchema = z.enum(["calendar.create", "calendar.update", "calendar.delete"]);
-export const ProposalStatusSchema = z.enum(["pending", "approved", "applied", "rejected", "failed", "expired"]);
+export const ProposalStatusSchema = z.enum([
+  "pending",
+  "approved",
+  "applied",
+  "rejected",
+  "failed",
+  "expired",
+]);
 export const ProposalSchema = z
   .object({
     id: IdSchema,
@@ -700,7 +712,13 @@ export type Proposal = z.infer<typeof ProposalSchema>;
 
 export const ConnectionProviderSchema = z.enum(["google", "toss", "ai"]);
 export type ConnectionProvider = z.infer<typeof ConnectionProviderSchema>;
-export const ConnectionStatusSchema = z.enum(["disconnected", "connected", "reauth_required", "stale", "failed"]);
+export const ConnectionStatusSchema = z.enum([
+  "disconnected",
+  "connected",
+  "reauth_required",
+  "stale",
+  "failed",
+]);
 export type ConnectionStatus = z.infer<typeof ConnectionStatusSchema>;
 /** 토큰·키·sync cursor는 서버 전용이며 여기 포함되지 않는다. */
 export const ConnectionSchema = z.object({
@@ -886,7 +904,9 @@ export type Receipt = z.infer<typeof ReceiptSchema>;
  */
 export const ReviewKindSchema = z.enum(["weekly", "monthly"]);
 export type ReviewKind = z.infer<typeof ReviewKindSchema>;
-export const ReviewKeySchema = z.string().regex(/^(?:weekly:\d{4}-W(?:0[1-9]|[1-4]\d|5[0-3])|monthly:\d{4}-(?:0[1-9]|1[0-2]))$/);
+export const ReviewKeySchema = z
+  .string()
+  .regex(/^(?:weekly:\d{4}-W(?:0[1-9]|[1-4]\d|5[0-3])|monthly:\d{4}-(?:0[1-9]|1[0-2]))$/);
 export const ReviewStatusSchema = z.enum(["draft", "finalized"]);
 
 export const RoutineReviewRowSchema = z.object({
@@ -1288,7 +1308,11 @@ export const ProjectPatchSchema = z.object({
   dueDate: DateOnlySchema.nullable().optional(),
   sortOrder: z.number().int().optional(),
 });
-export const ProjectUpdatePayloadSchema = z.object({ projectId: IdSchema, ...expected, patch: ProjectPatchSchema });
+export const ProjectUpdatePayloadSchema = z.object({
+  projectId: IdSchema,
+  ...expected,
+  patch: ProjectPatchSchema,
+});
 export const ProjectRefPayloadSchema = z.object({ projectId: IdSchema, ...expected });
 
 // ---- routine / check-in
@@ -1305,7 +1329,11 @@ export const RoutinePatchSchema = z.object({
   status: RoutineStatusSchema.optional(),
   sortOrder: z.number().int().optional(),
 });
-export const RoutineUpdatePayloadSchema = z.object({ routineId: IdSchema, ...expected, patch: RoutinePatchSchema });
+export const RoutineUpdatePayloadSchema = z.object({
+  routineId: IdSchema,
+  ...expected,
+  patch: RoutinePatchSchema,
+});
 export const RoutineRefPayloadSchema = z.object({ routineId: IdSchema, ...expected });
 
 /** upsert(routineId, date). 같은 값 재전송은 no-op. */
@@ -1345,7 +1373,11 @@ export const AccountPatchSchema = z.object({
   memo: z.string().max(1000).nullable().optional(),
   sortOrder: z.number().int().optional(),
 });
-export const AccountUpdatePayloadSchema = z.object({ accountId: IdSchema, ...expected, patch: AccountPatchSchema });
+export const AccountUpdatePayloadSchema = z.object({
+  accountId: IdSchema,
+  ...expected,
+  patch: AccountPatchSchema,
+});
 export const AccountArchivePayloadSchema = z.object({
   accountId: IdSchema,
   ...expected,
@@ -1390,7 +1422,11 @@ export const NoteSavePayloadSchema = z.object({
   goalId: IdSchema.nullable(),
 });
 export const NoteRefPayloadSchema = z.object({ noteId: IdSchema, ...expected });
-export const NoteRestoreRevisionPayloadSchema = z.object({ noteId: IdSchema, ...expected, revisionId: IdSchema });
+export const NoteRestoreRevisionPayloadSchema = z.object({
+  noteId: IdSchema,
+  ...expected,
+  revisionId: IdSchema,
+});
 
 // ---- collection
 export const CollectionCreatePayloadSchema = z.object({
@@ -1745,13 +1781,18 @@ export const COMMAND_TYPES = [
   "guidance.delete",
 ] as const;
 
-type Equals<A, B> =
-  (<T>() => T extends A ? 1 : 2) extends <T>() => T extends B ? 1 : 2 ? true : false;
+type Equals<A, B> = (<T>() => T extends A ? 1 : 2) extends <T>() => T extends B ? 1 : 2 ? true : false;
 const _assertCommandTypesExhaustive: Equals<CommandType, (typeof COMMAND_TYPES)[number]> = true;
 void _assertCommandTypesExhaustive;
 
 /** AI가 실행할 수 없는 명령(15_ai: AI는 금융·캘린더 쓰기를 하지 않는다). 서버가 actor='ai'면 FORBIDDEN. */
-export const AI_FORBIDDEN_COMMAND_PREFIXES = ["account.", "snapshot.", "calendar.", "receipt.confirm", "settings."] as const;
+export const AI_FORBIDDEN_COMMAND_PREFIXES = [
+  "account.",
+  "snapshot.",
+  "calendar.",
+  "receipt.confirm",
+  "settings.",
+] as const;
 
 // ============================================================================
 // 6. 명령 결과 / API 응답 / 오류
@@ -1802,7 +1843,11 @@ export interface CommandResultMap {
   "calendar.approve": { proposal: Proposal; jobQueued: boolean };
   "calendar.reject": { proposal: Proposal };
   "inbox.create": { item: InboxItem };
-  "inbox.convert": { item: InboxItem; created: { type: "task"; task: Task } | { type: "note"; note: Note } | { type: "receipt"; receipt: Receipt } };
+  "inbox.convert": {
+    item: InboxItem;
+    created:
+      { type: "task"; task: Task } | { type: "note"; note: Note } | { type: "receipt"; receipt: Receipt };
+  };
   "inbox.archive": { item: InboxItem };
   "receipt.update": { receipt: Receipt };
   "receipt.confirm": { receipt: Receipt };
@@ -1952,7 +1997,10 @@ export interface VersionConflictError extends ApiError {
   error: ApiError["error"] & { code: "VERSION_CONFLICT"; details: VersionConflictDetails };
 }
 export interface ValidationError extends ApiError {
-  error: ApiError["error"] & { code: "VALIDATION_FAILED"; details: { issues: z.infer<typeof ValidationIssueSchema>[] } };
+  error: ApiError["error"] & {
+    code: "VALIDATION_FAILED";
+    details: { issues: z.infer<typeof ValidationIssueSchema>[] };
+  };
 }
 export interface AiBudgetExceededError extends ApiError {
   error: ApiError["error"] & { code: "AI_BUDGET_EXCEEDED"; details: { estimate: CostEstimate } };
@@ -1971,11 +2019,18 @@ export const CaptureRequestSchema = z
     url: z.url().optional(),
     source: z.enum(["share", "shortcut", "api"]).default("shortcut"),
     /** 파일이 있으면 클라이언트가 계산한 sha256(선택). 서버 계산값과 다르면 ATTACHMENT_REJECTED. */
-    sha256: z.string().regex(/^[0-9a-f]{64}$/).optional(),
+    sha256: z
+      .string()
+      .regex(/^[0-9a-f]{64}$/)
+      .optional(),
   })
-  .refine((c) => (c.kind === "text" ? typeof c.text === "string" : c.kind === "url" ? typeof c.url === "string" : true), {
-    error: "text/url 항목은 해당 필드가 필요합니다",
-  });
+  .refine(
+    (c) =>
+      c.kind === "text" ? typeof c.text === "string" : c.kind === "url" ? typeof c.url === "string" : true,
+    {
+      error: "text/url 항목은 해당 필드가 필요합니다",
+    },
+  );
 export type CaptureRequest = z.infer<typeof CaptureRequestSchema>;
 export interface CaptureResponse {
   ok: true;
@@ -2006,14 +2061,18 @@ export const DECIMAL_POLICY = {
 } as const;
 
 /** Inbox 상태 전이 표. 그 밖은 STATE_TRANSITION_INVALID. */
-export const INBOX_TRANSITIONS: Readonly<Record<z.infer<typeof InboxStatusSchema>, readonly z.infer<typeof InboxStatusSchema>[]>> = {
+export const INBOX_TRANSITIONS: Readonly<
+  Record<z.infer<typeof InboxStatusSchema>, readonly z.infer<typeof InboxStatusSchema>[]>
+> = {
   new: ["converted", "archived"],
   converted: [],
   archived: [],
 };
 
 /** Proposal 상태 전이 표. */
-export const PROPOSAL_TRANSITIONS: Readonly<Record<z.infer<typeof ProposalStatusSchema>, readonly z.infer<typeof ProposalStatusSchema>[]>> = {
+export const PROPOSAL_TRANSITIONS: Readonly<
+  Record<z.infer<typeof ProposalStatusSchema>, readonly z.infer<typeof ProposalStatusSchema>[]>
+> = {
   pending: ["approved", "rejected", "expired"],
   approved: ["applied", "failed"],
   applied: [],
@@ -2023,7 +2082,9 @@ export const PROPOSAL_TRANSITIONS: Readonly<Record<z.infer<typeof ProposalStatus
 };
 
 /** Analysis 상태 전이 표. */
-export const ANALYSIS_TRANSITIONS: Readonly<Record<z.infer<typeof AnalysisStatusSchema>, readonly z.infer<typeof AnalysisStatusSchema>[]>> = {
+export const ANALYSIS_TRANSITIONS: Readonly<
+  Record<z.infer<typeof AnalysisStatusSchema>, readonly z.infer<typeof AnalysisStatusSchema>[]>
+> = {
   previewed: ["consented", "cancelled"],
   consented: ["queued", "cancelled"],
   queued: ["running", "cancelled"],

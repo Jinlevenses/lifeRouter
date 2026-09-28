@@ -3,7 +3,15 @@ import type { CollectionProperty, CollectionView } from "@liferoute/contracts";
 import { compareValues, pruneValues, validateRecordValues, validateViews } from "../src/collections";
 
 const props: CollectionProperty[] = [
-  { id: "title", name: "제목", type: "text", options: [], relationCollectionId: null, required: true, sortOrder: 0 },
+  {
+    id: "title",
+    name: "제목",
+    type: "text",
+    options: [],
+    relationCollectionId: null,
+    required: true,
+    sortOrder: 0,
+  },
   {
     id: "state",
     name: "상태",
@@ -16,8 +24,24 @@ const props: CollectionProperty[] = [
     required: false,
     sortOrder: 1,
   },
-  { id: "price", name: "가격", type: "money", options: [], relationCollectionId: null, required: false, sortOrder: 2 },
-  { id: "day", name: "날짜", type: "date", options: [], relationCollectionId: null, required: false, sortOrder: 3 },
+  {
+    id: "price",
+    name: "가격",
+    type: "money",
+    options: [],
+    relationCollectionId: null,
+    required: false,
+    sortOrder: 2,
+  },
+  {
+    id: "day",
+    name: "날짜",
+    type: "date",
+    options: [],
+    relationCollectionId: null,
+    required: false,
+    sortOrder: 3,
+  },
 ];
 
 describe("UNIT-COLLECTION-001 typed collection values (FR-006)", () => {
@@ -37,19 +61,47 @@ describe("UNIT-COLLECTION-001 typed collection values (FR-006)", () => {
       state: { type: "status", value: "archived" },
       price: { type: "number", value: 3 },
     });
-    expect(issues.map((i) => i.path)).toEqual(["values.nope", "values.state", "values.price", "values.title"]);
+    expect(issues.map((i) => i.path)).toEqual([
+      "values.nope",
+      "values.state",
+      "values.price",
+      "values.title",
+    ]);
   });
 
   it("prunes values of removed properties", () => {
-    expect(pruneValues(props.slice(0, 1), { title: { type: "text", value: "a" }, state: { type: "status", value: "todo" } })).toEqual({
+    expect(
+      pruneValues(props.slice(0, 1), {
+        title: { type: "text", value: "a" },
+        state: { type: "status", value: "todo" },
+      }),
+    ).toEqual({
       title: { type: "text", value: "a" },
     });
   });
 
   it("requires a status/select property for boards and a date property for calendars", () => {
     const views: CollectionView[] = [
-      { id: "b", name: "보드", kind: "board", groupByPropertyId: "price", datePropertyId: null, sorts: [], filters: [], visiblePropertyIds: [] },
-      { id: "c", name: "달력", kind: "calendar", groupByPropertyId: null, datePropertyId: "day", sorts: [], filters: [], visiblePropertyIds: [] },
+      {
+        id: "b",
+        name: "보드",
+        kind: "board",
+        groupByPropertyId: "price",
+        datePropertyId: null,
+        sorts: [],
+        filters: [],
+        visiblePropertyIds: [],
+      },
+      {
+        id: "c",
+        name: "달력",
+        kind: "calendar",
+        groupByPropertyId: null,
+        datePropertyId: "day",
+        sorts: [],
+        filters: [],
+        visiblePropertyIds: [],
+      },
     ];
     expect(validateViews(props, views).map((i) => i.path)).toEqual(["views[0]"]);
   });

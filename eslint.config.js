@@ -26,6 +26,11 @@ export default tseslint.config(
     },
   },
   {
+    // Tests and the demo seed poke at loosely typed command results.
+    files: ["**/test/**/*.ts", "scripts/seed-demo.ts"],
+    rules: { "@typescript-eslint/no-explicit-any": "off" },
+  },
+  {
     rules: {
       "@typescript-eslint/no-unused-vars": [
         "error",
@@ -36,7 +41,8 @@ export default tseslint.config(
         "error",
         {
           selector: "CallExpression[callee.name='parseFloat']",
-          message: "parseFloat is forbidden: use decimal strings via @liferoute/core money helpers (ADR-002).",
+          message:
+            "parseFloat is forbidden: use decimal strings via @liferoute/core money helpers (ADR-002).",
         },
       ],
     },

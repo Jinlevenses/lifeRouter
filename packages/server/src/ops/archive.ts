@@ -27,7 +27,8 @@ async function buildZip(
 ): Promise<{ zip: Uint8Array; manifest: ArchiveManifest }> {
   const dump = await dumpTables(db, { portable: format === "liferoute-export" });
   const files: Record<string, Uint8Array> = {};
-  for (const [table, rows] of Object.entries(dump)) files[`data/${table}.json`] = strToU8(JSON.stringify(rows));
+  for (const [table, rows] of Object.entries(dump))
+    files[`data/${table}.json`] = strToU8(JSON.stringify(rows));
 
   const attachmentRows = await db.select().from(attachments);
   for (const a of attachmentRows) {
@@ -41,7 +42,11 @@ async function buildZip(
     for (const n of noteRows) {
       if (n.deletedAt) continue;
       const md = toMarkdown(n.title, n.document, { attachmentUrl: (id) => `../attachments/by-id/${id}` });
-      const safe = (n.title || "note").replace(/[\\/:*?"<>|\n\r]+/g, " ").trim().slice(0, 60) || "note";
+      const safe =
+        (n.title || "note")
+          .replace(/[\\/:*?"<>|\n\r]+/g, " ")
+          .trim()
+          .slice(0, 60) || "note";
       files[`notes/${safe}-${n.id.slice(0, 8)}.md`] = strToU8(md);
     }
   }
@@ -56,7 +61,8 @@ async function buildZip(
     counts: Object.fromEntries(Object.entries(dump).map(([k, v]) => [k, v.length])),
   };
   const zippable: Zippable = { "manifest.json": strToU8(JSON.stringify(manifest, null, 2)) };
-  for (const [path, bytes] of Object.entries(files)) zippable[path] = [bytes, { level: path.startsWith("attachments/") ? 0 : 6 }];
+  for (const [path, bytes] of Object.entries(files))
+    zippable[path] = [bytes, { level: path.startsWith("attachments/") ? 0 : 6 }];
   return { zip: zipSync(zippable), manifest };
 }
 
@@ -67,7 +73,10 @@ export async function createExport(db: Db, now = new Date(), attachmentsRoot = d
 }
 
 /** Opens an archive and verifies every file against the manifest; any mismatch aborts (docs/11_operations). */
-export function openArchive(zip: Uint8Array): { manifest: ArchiveManifest; files: Record<string, Uint8Array> } {
+export function openArchive(zip: Uint8Array): {
+  manifest: ArchiveManifest;
+  files: Record<string, Uint8Array>;
+} {
   const entries = unzipSync(zip);
   const manifestBytes = entries["manifest.json"];
   if (!manifestBytes) throw new Error("manifest.json is missing");
@@ -76,30 +85,47 @@ export function openArchive(zip: Uint8Array): { manifest: ArchiveManifest; files
   for (const f of manifest.files) {
     const bytes = entries[f.path];
     if (!bytes) throw new Error(`Missing file in archive: ${f.path}`);
-    if (bytes.length !== f.size || sha256(Buffer.from(bytes)) !== f.sha256) throw new Error(`Hash mismatch: ${f.path}`);
+    if (bytes.length !== f.size || sha256(Buffer.from(bytes)) !== f.sha256)
+      throw new Error(`Hash mismatch: ${f.path}`);
   }
   for (const path of Object.keys(entries)) {
-    if (path !== "manifest.json" && !listed.has(path) && !path.endsWith("/")) throw new Error(`Unlisted file in archive: ${path}`);
+    if (path !== "manifest.json" && !listed.has(path) && !path.endsWith("/"))
+      throw new Error(`Unlisted file in archive: ${path}`);
   }
   delete entries["manifest.json"];
   return { manifest, files: entries };
 }
 
 function backupFileName(now: Date): string {
-  return `liferoute-backup-${now.toISOString().replace(/[-:]/g, "").replace(/\.\d+Z$/, "Z")}.lrbk`;
+  return `liferoute-backup-${now
+    .toISOString()
+    .replace(/[-:]/g, "")
+    .replace(/\.\d+Z$/, "Z")}.lrbk`;
 }
 
 /** Encrypted daily backup (FR-010): archive + manifest + per-file hashes, AES-256-GCM with a separate key. */
 export async function createBackup(
   db: Db,
   options: { key: Buffer; dir?: string; attachmentsRoot?: string; now?: Date },
-): Promise<{ id: string; fileName: string; path: string; size: number; sha256: string; manifest: ArchiveManifest }> {
+): Promise<{
+  id: string;
+  fileName: string;
+  path: string;
+  size: number;
+  sha256: string;
+  manifest: ArchiveManifest;
+}> {
   const now = options.now ?? new Date();
   const dir = options.dir ?? backupsDir();
   const id = randomUUID();
   await db.insert(backupRuns).values({ id, startedAt: now });
   try {
-    const { zip, manifest } = await buildZip(db, "liferoute-backup", now, options.attachmentsRoot ?? defaultAttachmentsDir());
+    const { zip, manifest } = await buildZip(
+      db,
+      "liferoute-backup",
+      now,
+      options.attachmentsRoot ?? defaultAttachmentsDir(),
+    );
     const sealed = encrypt(Buffer.from(zip), options.key);
     const fileName = backupFileName(now);
     const path = join(dir, fileName);
@@ -114,19 +140,36 @@ export async function createBackup(
       .where(eq(backupRuns.id, id));
     await db
       .insert(opsState)
-      .values({ key: "backup.last", value: { at: finishedAt.toISOString(), ok: true, fileName }, updatedAt: finishedAt })
-      .onConflictDoUpdate({ target: opsState.key, set: { value: { at: finishedAt.toISOString(), ok: true, fileName }, updatedAt: finishedAt } });
+      .values({
+        key: "backup.last",
+        value: { at: finishedAt.toISOString(), ok: true, fileName },
+        updatedAt: finishedAt,
+      })
+      .onConflictDoUpdate({
+        target: opsState.key,
+        set: { value: { at: finishedAt.toISOString(), ok: true, fileName }, updatedAt: finishedAt },
+      });
     return { id, fileName, path, size: sealed.length, sha256: digest, manifest };
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    await db.update(backupRuns).set({ finishedAt: new Date(), ok: false, error: message.slice(0, 500) }).where(eq(backupRuns.id, id));
+    await db
+      .update(backupRuns)
+      .set({ finishedAt: new Date(), ok: false, error: message.slice(0, 500) })
+      .where(eq(backupRuns.id, id));
     const last = await db.select().from(opsState).where(eq(opsState.key, "backup.last"));
     const previous = (last[0]?.value as { at?: string } | undefined)?.at ?? null;
     // Keep the last *successful* time visible; record the failure alongside it.
     await db
       .insert(opsState)
-      .values({ key: "backup.last", value: { at: previous, ok: false, error: message.slice(0, 200) }, updatedAt: new Date() })
-      .onConflictDoUpdate({ target: opsState.key, set: { value: { at: previous, ok: false, error: message.slice(0, 200) }, updatedAt: new Date() } });
+      .values({
+        key: "backup.last",
+        value: { at: previous, ok: false, error: message.slice(0, 200) },
+        updatedAt: new Date(),
+      })
+      .onConflictDoUpdate({
+        target: opsState.key,
+        set: { value: { at: previous, ok: false, error: message.slice(0, 200) }, updatedAt: new Date() },
+      });
     throw error;
   }
 }
@@ -169,7 +212,9 @@ export async function pruneBackups(
   dir: string,
   policy: { daily: number; weekly: number; monthly: number },
 ): Promise<string[]> {
-  const names = (await readdir(dir).catch(() => [] as string[])).filter((n) => /^liferoute-backup-\d{8}T\d{6}Z\.lrbk$/.test(n));
+  const names = (await readdir(dir).catch(() => [] as string[])).filter((n) =>
+    /^liferoute-backup-\d{8}T\d{6}Z\.lrbk$/.test(n),
+  );
   const refs = names.map((name) => {
     const m = /^liferoute-backup-(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z/.exec(name)!;
     const instant = `${m[1]}-${m[2]}-${m[3]}T${m[4]}:${m[5]}:${m[6]}.000Z`;

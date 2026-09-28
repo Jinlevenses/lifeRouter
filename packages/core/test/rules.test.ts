@@ -51,7 +51,12 @@ describe("UNIT-AI-BUDGET-001 monthly AI cap (FR-009)", () => {
         { status: "completed", estimate: { costKrw: "999" } },
       ],
     );
-    expect(status).toMatchObject({ usedKrw: "720", reservedKrw: "1000", remainingKrw: "1280", configured: true });
+    expect(status).toMatchObject({
+      usedKrw: "720",
+      reservedKrw: "1000",
+      remainingKrw: "1280",
+      configured: true,
+    });
     const small = buildEstimate(ai, 20_000, status, "2026-09-28T00:00:00.000Z")!;
     expect(small.costKrw).toBe("140");
     expect(exceedsBudget(small)).toBe(false);

@@ -146,7 +146,14 @@ export function zoneOffsetMinutes(instant: Date, timeZone: string): number {
     second: "2-digit",
   }).formatToParts(instant);
   const get = (type: string) => Number(parts.find((p) => p.type === type)?.value ?? "0");
-  const asUtc = Date.UTC(get("year"), get("month") - 1, get("day"), get("hour"), get("minute"), get("second"));
+  const asUtc = Date.UTC(
+    get("year"),
+    get("month") - 1,
+    get("day"),
+    get("hour"),
+    get("minute"),
+    get("second"),
+  );
   return Math.round((asUtc - Math.floor(instant.getTime() / 1000) * 1000) / 60_000);
 }
 

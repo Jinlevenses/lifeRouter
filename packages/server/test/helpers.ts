@@ -47,14 +47,19 @@ export interface Harness {
   ok: (command: CommandInput) => Promise<any>;
 }
 
-export function harness(db: Db, now = new Date("2026-09-28T03:00:00.000Z"), integrations = disconnectedIntegrations()): Harness {
+export function harness(
+  db: Db,
+  now = new Date("2026-09-28T03:00:00.000Z"),
+  integrations = disconnectedIntegrations(),
+): Harness {
   const jobs = new MemoryJobQueue();
   const h: Harness = {
     db,
     jobs,
     integrations,
     now,
-    run: (command, actor = "owner") => executeCommand({ db, jobs, integrations: h.integrations, now: () => h.now }, command, actor),
+    run: (command, actor = "owner") =>
+      executeCommand({ db, jobs, integrations: h.integrations, now: () => h.now }, command, actor),
     ok: async (command) => {
       const res = await h.run(command);
       if (res.status !== 200) throw new Error(`${command.type} failed: ${JSON.stringify(res.body)}`);

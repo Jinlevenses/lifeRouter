@@ -11,7 +11,10 @@ import * as plan from "./plan";
 import * as reviews from "./reviews";
 import * as routines from "./routines";
 
-type Handler<T extends CommandType> = (ctx: CommandContext, payload: CommandPayload<T>) => Promise<CommandResultMap[T]>;
+type Handler<T extends CommandType> = (
+  ctx: CommandContext,
+  payload: CommandPayload<T>,
+) => Promise<CommandResultMap[T]>;
 export type HandlerMap = { [T in CommandType]: Handler<T> };
 
 /** Exhaustive: adding a command to the contract without a handler is a compile error. */

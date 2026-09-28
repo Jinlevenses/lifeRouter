@@ -2,7 +2,8 @@
  * Minimal structured logger with redaction (docs/13_security, review D-56): balances, note bodies,
  * tokens and OAuth payloads never reach logs.
  */
-const REDACT_KEYS = /amount|balance|krw|text|document|body|title|token|secret|password|authorization|cookie|code|refresh|access|key|merchant|memo|url/i;
+const REDACT_KEYS =
+  /amount|balance|krw|text|document|body|title|token|secret|password|authorization|cookie|code|refresh|access|key|merchant|memo|url/i;
 
 export function redact(value: unknown, depth = 0): unknown {
   if (depth > 4) return "[…]";
@@ -10,7 +11,10 @@ export function redact(value: unknown, depth = 0): unknown {
   if (Array.isArray(value)) return value.slice(0, 20).map((v) => redact(v, depth + 1));
   if (value && typeof value === "object") {
     return Object.fromEntries(
-      Object.entries(value as Record<string, unknown>).map(([k, v]) => [k, REDACT_KEYS.test(k) ? "[redacted]" : redact(v, depth + 1)]),
+      Object.entries(value as Record<string, unknown>).map(([k, v]) => [
+        k,
+        REDACT_KEYS.test(k) ? "[redacted]" : redact(v, depth + 1),
+      ]),
     );
   }
   return typeof value === "string" ? maskSecrets(value) : value;
@@ -27,14 +31,34 @@ export function maskSecrets(message: string): string {
 
 export const log = {
   info(event: string, meta?: Record<string, unknown>) {
-    console.log(JSON.stringify({ level: "info", event, ...(meta ? { meta: redact(meta) } : {}), at: new Date().toISOString() }));
+    console.log(
+      JSON.stringify({
+        level: "info",
+        event,
+        ...(meta ? { meta: redact(meta) } : {}),
+        at: new Date().toISOString(),
+      }),
+    );
   },
   warn(event: string, meta?: Record<string, unknown>) {
-    console.warn(JSON.stringify({ level: "warn", event, ...(meta ? { meta: redact(meta) } : {}), at: new Date().toISOString() }));
+    console.warn(
+      JSON.stringify({
+        level: "warn",
+        event,
+        ...(meta ? { meta: redact(meta) } : {}),
+        at: new Date().toISOString(),
+      }),
+    );
   },
   error(event: string, error: unknown, meta?: Record<string, unknown>) {
     console.error(
-      JSON.stringify({ level: "error", event, error: redact(error), ...(meta ? { meta: redact(meta) } : {}), at: new Date().toISOString() }),
+      JSON.stringify({
+        level: "error",
+        event,
+        error: redact(error),
+        ...(meta ? { meta: redact(meta) } : {}),
+        at: new Date().toISOString(),
+      }),
     );
   },
 };

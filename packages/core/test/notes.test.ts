@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
 import type { DocumentNode } from "@liferoute/contracts";
-import { deriveText, extractLinks, normalizeTags, textToDocument, toMarkdown, validateDocument } from "../src/notes";
+import {
+  deriveText,
+  extractLinks,
+  normalizeTags,
+  textToDocument,
+  toMarkdown,
+  validateDocument,
+} from "../src/notes";
 
 const NOTE_ID = "11111111-1111-4111-8111-111111111111";
 const PROJECT_ID = "22222222-2222-4222-8222-222222222222";
@@ -21,14 +28,24 @@ const doc: DocumentNode = {
     {
       type: "taskList",
       content: [
-        { type: "taskItem", attrs: { checked: true }, content: [{ type: "paragraph", content: [{ type: "text", text: "견적 받기" }] }] },
-        { type: "taskItem", attrs: { checked: false }, content: [{ type: "paragraph", content: [{ type: "text", text: "계약" }] }] },
+        {
+          type: "taskItem",
+          attrs: { checked: true },
+          content: [{ type: "paragraph", content: [{ type: "text", text: "견적 받기" }] }],
+        },
+        {
+          type: "taskItem",
+          attrs: { checked: false },
+          content: [{ type: "paragraph", content: [{ type: "text", text: "계약" }] }],
+        },
       ],
     },
     { type: "image", attrs: { attachmentId: ATTACHMENT_ID, alt: "영수증" } },
     {
       type: "paragraph",
-      content: [{ type: "text", text: "링크", marks: [{ type: "link", attrs: { href: "https://www.nts.go.kr" } }] }],
+      content: [
+        { type: "text", text: "링크", marks: [{ type: "link", attrs: { href: "https://www.nts.go.kr" } }] },
+      ],
     },
   ],
 };
@@ -39,7 +56,12 @@ describe("UNIT-NOTE-001 notes (FR-006)", () => {
     const bad: DocumentNode = {
       type: "doc",
       content: [
-        { type: "paragraph", content: [{ type: "text", text: "x", marks: [{ type: "link", attrs: { href: "javascript:alert(1)" } }] }] },
+        {
+          type: "paragraph",
+          content: [
+            { type: "text", text: "x", marks: [{ type: "link", attrs: { href: "javascript:alert(1)" } }] },
+          ],
+        },
         { type: "noteLink", attrs: { targetType: "user", targetId: "nope", label: "" } },
         { type: "image", attrs: { src: "https://evil.example/x.png" } },
       ],

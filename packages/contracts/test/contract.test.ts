@@ -13,7 +13,8 @@ import {
 
 describe("TYPE-CONTRACT-001 contract primitives and commands (DR-001, NFR-002)", () => {
   it("accepts only decimal-string money", () => {
-    for (const ok of ["0", "1500000", "-12.5", "0.0001"]) expect(MoneySchema.safeParse(ok).success).toBe(true);
+    for (const ok of ["0", "1500000", "-12.5", "0.0001"])
+      expect(MoneySchema.safeParse(ok).success).toBe(true);
     for (const bad of ["1e6", "1,000", "01", "1.23456", "", " 1", 1000]) {
       expect(MoneySchema.safeParse(bad).success).toBe(false);
     }
@@ -33,8 +34,15 @@ describe("TYPE-CONTRACT-001 contract primitives and commands (DR-001, NFR-002)",
   });
 
   it("parses a command with defaults filled in", () => {
-    const parsed = CommandSchema.parse({ type: "task.create", payload: { title: "장보기" }, idempotencyKey: "abcdefgh-1" });
-    expect(parsed).toMatchObject({ type: "task.create", payload: { title: "장보기", dueDate: null, recurrence: null } });
+    const parsed = CommandSchema.parse({
+      type: "task.create",
+      payload: { title: "장보기" },
+      idempotencyKey: "abcdefgh-1",
+    });
+    expect(parsed).toMatchObject({
+      type: "task.create",
+      payload: { title: "장보기", dueDate: null, recurrence: null },
+    });
   });
 
   it("forces liabilities to count in net worth (review D-13)", () => {
@@ -47,13 +55,23 @@ describe("TYPE-CONTRACT-001 contract primitives and commands (DR-001, NFR-002)",
   it("requires a reason for estimated snapshots", () => {
     const base = { accountId: "11111111-1111-4111-8111-111111111111", asOf: "2026-09-28", amount: "100" };
     expect(SnapshotAddPayloadSchema.safeParse({ ...base, estimated: true }).success).toBe(false);
-    expect(SnapshotAddPayloadSchema.safeParse({ ...base, estimated: true, reason: "앱 점검 중" }).success).toBe(true);
+    expect(
+      SnapshotAddPayloadSchema.safeParse({ ...base, estimated: true, reason: "앱 점검 중" }).success,
+    ).toBe(true);
   });
 
   it("validates recurrence shapes", () => {
-    expect(RecurrenceSchema.safeParse({ kind: "weekly", weekdays: [], startDate: "2026-09-28", endDate: null }).success).toBe(false);
-    expect(RecurrenceSchema.safeParse({ kind: "monthly", day: 31, startDate: "2026-09-28", endDate: null }).success).toBe(true);
-    expect(RecurrenceSchema.safeParse({ kind: "daily", startDate: "2026-09-28", endDate: "2026-09-01" }).success).toBe(false);
+    expect(
+      RecurrenceSchema.safeParse({ kind: "weekly", weekdays: [], startDate: "2026-09-28", endDate: null })
+        .success,
+    ).toBe(false);
+    expect(
+      RecurrenceSchema.safeParse({ kind: "monthly", day: 31, startDate: "2026-09-28", endDate: null })
+        .success,
+    ).toBe(true);
+    expect(
+      RecurrenceSchema.safeParse({ kind: "daily", startDate: "2026-09-28", endDate: "2026-09-01" }).success,
+    ).toBe(false);
   });
 
   it("maps every error code to an HTTP status", () => {

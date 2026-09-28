@@ -22,7 +22,11 @@ export function sniffMime(bytes: Uint8Array): AllowedMime | null {
   if (b.length >= 8 && ascii(0, 8) === "\x89PNG\r\n\x1a\n") return "image/png";
   if (b.length >= 12 && ascii(0, 4) === "RIFF" && ascii(8, 12) === "WEBP") return "image/webp";
   if (b.length >= 5 && ascii(0, 5) === "%PDF-") return "application/pdf";
-  if (b.length >= 12 && ascii(4, 8) === "ftyp" && /^(heic|heix|hevc|hevx|mif1|msf1|heim|heis)$/.test(ascii(8, 12))) {
+  if (
+    b.length >= 12 &&
+    ascii(4, 8) === "ftyp" &&
+    /^(heic|heix|hevc|hevx|mif1|msf1|heim|heis)$/.test(ascii(8, 12))
+  ) {
     return "image/heic";
   }
   if (isPlainText(b)) return "text/plain";
@@ -52,7 +56,8 @@ export async function storeAttachment(
   const mime = sniffMime(input.bytes);
   if (!mime) throw rejected("지원하지 않는 파일 형식입니다 (JPEG, PNG, HEIC, WebP, PDF, 텍스트).");
   const sha256 = createHash("sha256").update(input.bytes).digest("hex");
-  if (input.clientSha256 && input.clientSha256.toLowerCase() !== sha256) throw rejected("파일 해시가 일치하지 않습니다.");
+  if (input.clientSha256 && input.clientSha256.toLowerCase() !== sha256)
+    throw rejected("파일 해시가 일치하지 않습니다.");
 
   const [existing] = await db.select().from(attachments).where(eq(attachments.sha256, sha256));
   if (existing) return toAttachment(existing);
@@ -63,10 +68,19 @@ export async function storeAttachment(
   await writeFile(tmp, input.bytes, { mode: 0o600 });
   await rename(tmp, path);
 
+  // Strip control characters and path separators from the stored display name.
+  // eslint-disable-next-line no-control-regex
   const name = input.originalName.replace(/[\u0000-\u001f\\/]+/g, "_").slice(0, 255) || "file";
   const [row] = await db
     .insert(attachments)
-    .values({ id: randomUUID(), sha256, mime, size: input.bytes.length, originalName: name, createdAt: input.now ?? new Date() })
+    .values({
+      id: randomUUID(),
+      sha256,
+      mime,
+      size: input.bytes.length,
+      originalName: name,
+      createdAt: input.now ?? new Date(),
+    })
     .onConflictDoNothing({ target: attachments.sha256 })
     .returning();
   if (row) return toAttachment(row);
@@ -74,7 +88,10 @@ export async function storeAttachment(
   return toAttachment(raced!);
 }
 
-export async function readAttachment(db: DbOrTx, id: string): Promise<{ attachment: Attachment; bytes: Buffer }> {
+export async function readAttachment(
+  db: DbOrTx,
+  id: string,
+): Promise<{ attachment: Attachment; bytes: Buffer }> {
   const [row] = await db.select().from(attachments).where(eq(attachments.id, id));
   if (!row) throw notFound("첨부 파일");
   const bytes = await readFile(attachmentPath(row.sha256)).catch(() => {

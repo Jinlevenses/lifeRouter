@@ -7,8 +7,12 @@ const routine = { id: "r1", schedule, status: "active" as const, deletedAt: null
 
 describe("UNIT-ROUTINE-001 routine states (FR-004)", () => {
   it("distinguishes done, skipped, unrecorded and notExpected", () => {
-    expect(dayState(routine, { routineId: "r1", date: "2026-09-28", status: "done" }, "2026-09-28")).toBe("done");
-    expect(dayState(routine, { routineId: "r1", date: "2026-09-28", status: "skipped" }, "2026-09-28")).toBe("skipped");
+    expect(dayState(routine, { routineId: "r1", date: "2026-09-28", status: "done" }, "2026-09-28")).toBe(
+      "done",
+    );
+    expect(dayState(routine, { routineId: "r1", date: "2026-09-28", status: "skipped" }, "2026-09-28")).toBe(
+      "skipped",
+    );
     expect(dayState(routine, undefined, "2026-09-28")).toBe("unrecorded");
     expect(dayState(routine, undefined, "2026-09-27")).toBe("notExpected"); // Sunday
     expect(dayState({ ...routine, status: "paused" }, undefined, "2026-09-28")).toBe("notExpected");
@@ -31,7 +35,11 @@ describe("UNIT-ROUTINE-001 routine states (FR-004)", () => {
 
   it("counts a streak of done expected days", () => {
     const checkIns = indexCheckIns(
-      ["2026-09-23", "2026-09-24", "2026-09-25", "2026-09-28"].map((date) => ({ routineId: "r1", date, status: "done" as const })),
+      ["2026-09-23", "2026-09-24", "2026-09-25", "2026-09-28"].map((date) => ({
+        routineId: "r1",
+        date,
+        status: "done" as const,
+      })),
     );
     // today (Tue 29th) not yet recorded does not break the streak
     expect(currentStreak(routine, checkIns, "2026-09-29")).toBe(4);

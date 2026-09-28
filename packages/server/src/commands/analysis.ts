@@ -1,6 +1,11 @@
 import { randomUUID } from "node:crypto";
 import { and, eq, inArray, isNull, sql } from "drizzle-orm";
-import { JOB_NAMES, type CommandPayload, type CommandResultMap, type CostEstimate } from "@liferoute/contracts";
+import {
+  JOB_NAMES,
+  type CommandPayload,
+  type CommandResultMap,
+  type CostEstimate,
+} from "@liferoute/contracts";
 import { budgetStatus, buildEstimate, canTransition, exceedsBudget, monthKey } from "@liferoute/core";
 import type { DbOrTx } from "../db/client";
 import { aiUsage, analyses, notes } from "../db/schema";
@@ -16,7 +21,12 @@ type R<T extends keyof CommandResultMap> = Promise<CommandResultMap[T]>;
  * preview (selected notes, purpose, cost, remaining budget) → execute with explicit consent matching
  * the shown estimate → worker sends only those notes. The monthly cap is checked at both steps.
  */
-export async function currentBudget(db: DbOrTx, settings: CommandContext["settings"], today: string, excludeAnalysisId?: string) {
+export async function currentBudget(
+  db: DbOrTx,
+  settings: CommandContext["settings"],
+  today: string,
+  excludeAnalysisId?: string,
+) {
   const month = monthKey(today);
   const usageRows = await db.select().from(aiUsage).where(eq(aiUsage.monthKey, month));
   const analysisRows = await db
@@ -26,8 +36,14 @@ export async function currentBudget(db: DbOrTx, settings: CommandContext["settin
   return budgetStatus(
     settings.ai,
     month,
-    usageRows.map((u) => ({ monthKey: u.monthKey, estimatedCostKrw: canon(u.estimatedCostKrw), actualCostKrw: u.actualCostKrw ? canon(u.actualCostKrw) : null })),
-    analysisRows.filter((a) => a.id !== excludeAnalysisId).map((a) => ({ status: a.status, estimate: a.estimate ?? null })),
+    usageRows.map((u) => ({
+      monthKey: u.monthKey,
+      estimatedCostKrw: canon(u.estimatedCostKrw),
+      actualCostKrw: u.actualCostKrw ? canon(u.actualCostKrw) : null,
+    })),
+    analysisRows
+      .filter((a) => a.id !== excludeAnalysisId)
+      .map((a) => ({ status: a.status, estimate: a.estimate ?? null })),
   );
 }
 
@@ -49,7 +65,11 @@ async function noteChars(ctx: CommandContext, noteIds: string[]) {
   return rows.reduce((sum, n) => sum + n.title.length + n.text.length, 0);
 }
 
-async function estimateFor(ctx: CommandContext, noteIds: string[], excludeAnalysisId?: string): Promise<CostEstimate> {
+async function estimateFor(
+  ctx: CommandContext,
+  noteIds: string[],
+  excludeAnalysisId?: string,
+): Promise<CostEstimate> {
   const ai = ctx.settings.ai;
   if (ai.provider === "disconnected" || !ctx.integrations.ai.available) throw notConfigured();
   const status = await currentBudget(ctx.tx, ctx.settings, ctx.today, excludeAnalysisId);
@@ -95,7 +115,8 @@ async function lockAnalysis(ctx: CommandContext, id: string, expectedVersion: nu
 
 export async function analysisExecute(ctx: CommandContext, p: P<"analysis.execute">): R<"analysis.execute"> {
   const row = await lockAnalysis(ctx, p.analysisId, p.expectedVersion);
-  if (!canTransition("analysis", row.status, "consented")) throw invalidTransition("미리보기 상태의 분석만 실행할 수 있습니다.");
+  if (!canTransition("analysis", row.status, "consented"))
+    throw invalidTransition("미리보기 상태의 분석만 실행할 수 있습니다.");
   const estimate = await estimateFor(ctx, row.noteIds, row.id);
   if (estimate.costKrw !== canon(p.consentEstimateKrw)) {
     // Keep the refreshed estimate so the owner can review it and consent again.
@@ -130,7 +151,8 @@ export async function analysisExecute(ctx: CommandContext, p: P<"analysis.execut
 
 export async function analysisCancel(ctx: CommandContext, p: P<"analysis.cancel">): R<"analysis.cancel"> {
   const row = await lockAnalysis(ctx, p.analysisId, p.expectedVersion);
-  if (!canTransition("analysis", row.status, "cancelled")) throw invalidTransition("이미 실행 중이거나 끝난 분석입니다.");
+  if (!canTransition("analysis", row.status, "cancelled"))
+    throw invalidTransition("이미 실행 중이거나 끝난 분석입니다.");
   const [updated] = await ctx.tx
     .update(analyses)
     .set({ status: "cancelled", updatedAt: ctx.now, version: sql`version + 1` })

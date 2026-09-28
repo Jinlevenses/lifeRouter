@@ -13,7 +13,9 @@ export async function integrationsFromEnv(env: NodeJS.ProcessEnv = process.env):
     env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET
       ? new (await import("./google")).GoogleCalendarProvider(env.GOOGLE_CLIENT_ID, env.GOOGLE_CLIENT_SECRET)
       : disconnectedCalendar;
-  const ai = env.ANTHROPIC_API_KEY ? new (await import("./anthropic")).AnthropicProvider(env.ANTHROPIC_API_KEY) : disconnectedAi;
+  const ai = env.ANTHROPIC_API_KEY
+    ? new (await import("./anthropic")).AnthropicProvider(env.ANTHROPIC_API_KEY)
+    : disconnectedAi;
   return { calendar, balance: disconnectedBalance, ocr: unavailableOcr, ai };
 }
 
@@ -24,5 +26,10 @@ export async function getIntegrations(): Promise<Integrations> {
 }
 
 export function disconnectedIntegrations(): Integrations {
-  return { calendar: disconnectedCalendar, balance: disconnectedBalance, ocr: unavailableOcr, ai: disconnectedAi };
+  return {
+    calendar: disconnectedCalendar,
+    balance: disconnectedBalance,
+    ocr: unavailableOcr,
+    ai: disconnectedAi,
+  };
 }

@@ -19,7 +19,9 @@ export function applyOwnerFields(fields: ReceiptFields, patch: ReceiptFieldsPatc
     const value = patch[key];
     if (value === undefined) continue;
     (next[key] as { value: unknown; confidence: number | null; source: string }) =
-      value === null ? { value: null, confidence: null, source: "none" } : { value, confidence: null, source: "owner" };
+      value === null
+        ? { value: null, confidence: null, source: "none" }
+        : { value, confidence: null, source: "owner" };
   }
   return next;
 }

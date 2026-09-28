@@ -35,7 +35,11 @@ function requireDueForRecurrence(recurrence: Recurrence | null, dueDate: string 
   }
 }
 
-async function assertNewId(ctx: CommandContext, table: typeof tasks | typeof goals | typeof projects, id: string) {
+async function assertNewId(
+  ctx: CommandContext,
+  table: typeof tasks | typeof goals | typeof projects,
+  id: string,
+) {
   const [row] = await ctx.tx.select({ id: table.id }).from(table).where(eq(table.id, id));
   if (row) throw new DomainError("VALIDATION_FAILED", "이미 사용 중인 id입니다.");
 }
@@ -113,7 +117,9 @@ export async function taskUpdate(ctx: CommandContext, p: P<"task.update">): R<"t
     projectId,
     goalId,
     dueDate,
-    ...(patch.plannedAt !== undefined ? { plannedAt: patch.plannedAt ? new Date(patch.plannedAt) : null } : {}),
+    ...(patch.plannedAt !== undefined
+      ? { plannedAt: patch.plannedAt ? new Date(patch.plannedAt) : null }
+      : {}),
     ...(patch.plannedDurationMin !== undefined ? { plannedDurationMin: patch.plannedDurationMin } : {}),
     recurrence,
     seriesId: recurrence ? (row.seriesId ?? row.id) : row.seriesId,
@@ -164,13 +170,21 @@ export async function taskComplete(ctx: CommandContext, p: P<"task.complete">): 
 export async function taskReopen(ctx: CommandContext, p: P<"task.reopen">): R<"task.reopen"> {
   const row = await lockTask(ctx, p.taskId, p.expectedVersion);
   if (row.status === "open") throw invalidTransition("이미 열린 할 일입니다.");
-  let top: { topDate: string | null; topRank: 1 | 2 | 3 | null } = { topDate: row.topDate, topRank: row.topRank };
+  let top: { topDate: string | null; topRank: 1 | 2 | 3 | null } = {
+    topDate: row.topDate,
+    topRank: row.topRank,
+  };
   if (row.topDate && row.topRank) {
     const [taken] = await ctx.tx
       .select({ id: tasks.id })
       .from(tasks)
       .where(
-        and(eq(tasks.topDate, row.topDate), eq(tasks.topRank, row.topRank), eq(tasks.status, "open"), isNull(tasks.deletedAt)),
+        and(
+          eq(tasks.topDate, row.topDate),
+          eq(tasks.topRank, row.topRank),
+          eq(tasks.status, "open"),
+          isNull(tasks.deletedAt),
+        ),
       );
     if (taken) top = { topDate: null, topRank: null };
   }
@@ -193,7 +207,13 @@ export async function taskSetTop(ctx: CommandContext, p: P<"task.setTop">): R<"t
   const row = await lockTask(ctx, p.taskId, p.expectedVersion);
   if (row.status !== "open") throw invalidTransition("열린 할 일만 오늘의 3가지로 지정할 수 있습니다.");
   const sameDay = await ctx.tx
-    .select({ id: tasks.id, status: tasks.status, topDate: tasks.topDate, topRank: tasks.topRank, deletedAt: tasks.deletedAt })
+    .select({
+      id: tasks.id,
+      status: tasks.status,
+      topDate: tasks.topDate,
+      topRank: tasks.topRank,
+      deletedAt: tasks.deletedAt,
+    })
     .from(tasks)
     .where(and(eq(tasks.topDate, p.date), eq(tasks.status, "open"), isNull(tasks.deletedAt)))
     .for("update");
@@ -205,7 +225,12 @@ export async function taskSetTop(ctx: CommandContext, p: P<"task.setTop">): R<"t
   );
   if (!pick.ok) {
     throw pick.code === "TOP_LIMIT_EXCEEDED"
-      ? new DomainError("TOP_LIMIT_EXCEEDED", "하루에 3개까지만 지정할 수 있습니다.", undefined, "다른 항목을 먼저 빼 주세요.")
+      ? new DomainError(
+          "TOP_LIMIT_EXCEEDED",
+          "하루에 3개까지만 지정할 수 있습니다.",
+          undefined,
+          "다른 항목을 먼저 빼 주세요.",
+        )
       : new DomainError("TOP_RANK_TAKEN", "그 순위는 이미 다른 할 일이 차지하고 있습니다.");
   }
   return { task: await updateTask(ctx, row.id, { topDate: p.date, topRank: pick.rank }) };
@@ -255,7 +280,10 @@ export async function goalDelete(ctx: CommandContext, p: P<"goal.delete">): R<"g
   await lockGoal(ctx, p.goalId, p.expectedVersion);
   // Detach dependants so nothing points at a deleted goal (versions bump so stale clients get 409).
   for (const table of [projects, tasks, notes] as const) {
-    await ctx.tx.update(table).set({ goalId: null, ...bump(ctx.now) }).where(eq(table.goalId, p.goalId));
+    await ctx.tx
+      .update(table)
+      .set({ goalId: null, ...bump(ctx.now) })
+      .where(eq(table.goalId, p.goalId));
   }
   const [row] = await ctx.tx
     .update(goals)
@@ -312,7 +340,10 @@ export async function projectUpdate(ctx: CommandContext, p: P<"project.update">)
 export async function projectDelete(ctx: CommandContext, p: P<"project.delete">): R<"project.delete"> {
   await lockProject(ctx, p.projectId, p.expectedVersion);
   for (const table of [tasks, notes] as const) {
-    await ctx.tx.update(table).set({ projectId: null, ...bump(ctx.now) }).where(eq(table.projectId, p.projectId));
+    await ctx.tx
+      .update(table)
+      .set({ projectId: null, ...bump(ctx.now) })
+      .where(eq(table.projectId, p.projectId));
   }
   const [row] = await ctx.tx
     .update(projects)

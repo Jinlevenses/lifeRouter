@@ -24,7 +24,10 @@ export function encrypt(plain: Buffer, key: Buffer): Buffer {
 }
 
 export function decrypt(sealed: Buffer, key: Buffer): Buffer {
-  if (sealed.length < MAGIC.length + IV_LENGTH + TAG_LENGTH || !sealed.subarray(0, MAGIC.length).equals(MAGIC)) {
+  if (
+    sealed.length < MAGIC.length + IV_LENGTH + TAG_LENGTH ||
+    !sealed.subarray(0, MAGIC.length).equals(MAGIC)
+  ) {
     throw new Error("Not a LifeRoute backup file (bad header).");
   }
   const iv = sealed.subarray(MAGIC.length, MAGIC.length + IV_LENGTH);

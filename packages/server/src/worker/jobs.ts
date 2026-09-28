@@ -16,7 +16,12 @@ import { backupsDir } from "../storage";
  * Worker job bodies (docs/11_operations). Each is idempotent: re-running after a crash or a
  * duplicate delivery leaves the same end state.
  */
-export async function runAnalysis(db: Db, integrations: Integrations, analysisId: string, now = new Date()): Promise<void> {
+export async function runAnalysis(
+  db: Db,
+  integrations: Integrations,
+  analysisId: string,
+  now = new Date(),
+): Promise<void> {
   const claimed = await db
     .update(analyses)
     .set({ status: "running", startedAt: now, updatedAt: now, version: sql`version + 1` })
@@ -81,7 +86,10 @@ export async function runAnalysis(db: Db, integrations: Integrations, analysisId
   }
 }
 
-export async function runBackup(db: Db, now = new Date()): Promise<{ fileName: string; pruned: string[] } | null> {
+export async function runBackup(
+  db: Db,
+  now = new Date(),
+): Promise<{ fileName: string; pruned: string[] } | null> {
   const [settingsRow] = await db.select().from(settings).where(eq(settings.id, "settings"));
   const backup = settingsRow?.backup;
   if (backup && !backup.enabled) return null;
@@ -101,7 +109,10 @@ export async function backupIsDue(db: Db, now = new Date()): Promise<boolean> {
 
 export async function pruneIdempotency(db: Db, now = new Date()): Promise<number> {
   const cutoff = new Date(now.getTime() - IDEMPOTENCY_TTL_HOURS * 3600_000);
-  const removed = await db.delete(commandLog).where(lt(commandLog.createdAt, cutoff)).returning({ k: commandLog.idempotencyKey });
+  const removed = await db
+    .delete(commandLog)
+    .where(lt(commandLog.createdAt, cutoff))
+    .returning({ k: commandLog.idempotencyKey });
   return removed.length;
 }
 
@@ -128,10 +139,17 @@ export async function heartbeat(db: Db, now = new Date()): Promise<void> {
 export async function sweep(db: Db, jobs: JobQueue, now = new Date()): Promise<number> {
   const olderThan = new Date(now.getTime() - 2 * 60_000);
   const [approved, queued] = await Promise.all([
-    db.select({ id: proposals.id }).from(proposals).where(and(eq(proposals.status, "approved"), lt(proposals.updatedAt, olderThan))),
-    db.select({ id: analyses.id }).from(analyses).where(and(eq(analyses.status, "queued"), lt(analyses.updatedAt, olderThan))),
+    db
+      .select({ id: proposals.id })
+      .from(proposals)
+      .where(and(eq(proposals.status, "approved"), lt(proposals.updatedAt, olderThan))),
+    db
+      .select({ id: analyses.id })
+      .from(analyses)
+      .where(and(eq(analyses.status, "queued"), lt(analyses.updatedAt, olderThan))),
   ]);
-  for (const p of approved) await jobs.send(JOB_NAMES.googleApplyProposal, { proposalId: p.id }, { singletonKey: p.id });
+  for (const p of approved)
+    await jobs.send(JOB_NAMES.googleApplyProposal, { proposalId: p.id }, { singletonKey: p.id });
   for (const a of queued) await jobs.send(JOB_NAMES.aiAnalysis, { analysisId: a.id }, { singletonKey: a.id });
   return approved.length + queued.length;
 }

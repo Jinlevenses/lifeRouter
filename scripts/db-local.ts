@@ -26,7 +26,8 @@ try {
 }
 
 mkdirSync(dataDir, { recursive: true, mode: 0o700 });
-if (!existsSync(secretFile)) writeFileSync(secretFile, randomBytes(18).toString("base64url"), { mode: 0o600 });
+if (!existsSync(secretFile))
+  writeFileSync(secretFile, randomBytes(18).toString("base64url"), { mode: 0o600 });
 const password = readFileSync(secretFile, "utf8").trim();
 
 const pg = new EmbeddedPostgres({

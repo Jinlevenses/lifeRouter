@@ -1,4 +1,9 @@
-import { AI_MONTHLY_BUDGET_KRW_DEFAULT, FINANCE_GOAL_AMOUNT_KRW_DEFAULT, FINANCE_GOAL_MONTHS_DEFAULT, SNAPSHOT_STALE_AFTER_DAYS_DEFAULT } from "@liferoute/contracts";
+import {
+  AI_MONTHLY_BUDGET_KRW_DEFAULT,
+  FINANCE_GOAL_AMOUNT_KRW_DEFAULT,
+  FINANCE_GOAL_MONTHS_DEFAULT,
+  SNAPSHOT_STALE_AFTER_DAYS_DEFAULT,
+} from "@liferoute/contracts";
 import { addMonths } from "@liferoute/core";
 import { randomUUID } from "node:crypto";
 import type { DbOrTx } from "./db/client";

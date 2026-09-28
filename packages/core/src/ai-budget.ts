@@ -36,7 +36,10 @@ export function budgetStatus(
   usages: readonly UsageLike[],
   analyses: readonly ReservationLike[],
 ): AiBudgetStatus {
-  const used = add("0", ...usages.filter((u) => u.monthKey === monthKey).map((u) => u.actualCostKrw ?? u.estimatedCostKrw));
+  const used = add(
+    "0",
+    ...usages.filter((u) => u.monthKey === monthKey).map((u) => u.actualCostKrw ?? u.estimatedCostKrw),
+  );
   const reserved = add(
     "0",
     ...analyses.filter((a) => RESERVING.has(a.status) && a.estimate).map((a) => a.estimate!.costKrw),

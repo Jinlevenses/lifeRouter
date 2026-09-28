@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 import type { Recurrence } from "@liferoute/contracts";
-import { describeRecurrence, firstAfter, normalizeRecurrence, occurrencesBetween, occursOn } from "../src/recurrence";
+import {
+  describeRecurrence,
+  firstAfter,
+  normalizeRecurrence,
+  occurrencesBetween,
+  occursOn,
+} from "../src/recurrence";
 
 const base = { startDate: "2026-01-01", endDate: null };
 
@@ -8,7 +14,11 @@ describe("UNIT-REC-001 recurrence (FR-003)", () => {
   it("daily starts on startDate and respects endDate", () => {
     const rule: Recurrence = { kind: "daily", startDate: "2026-09-28", endDate: "2026-09-30" };
     expect(occursOn(rule, "2026-09-27")).toBe(false);
-    expect(occurrencesBetween(rule, "2026-09-25", "2026-10-02")).toEqual(["2026-09-28", "2026-09-29", "2026-09-30"]);
+    expect(occurrencesBetween(rule, "2026-09-25", "2026-10-02")).toEqual([
+      "2026-09-28",
+      "2026-09-29",
+      "2026-09-30",
+    ]);
   });
 
   it("weekday means Monday to Friday", () => {
@@ -20,12 +30,19 @@ describe("UNIT-REC-001 recurrence (FR-003)", () => {
       "2026-10-01",
       "2026-10-02",
     ]);
-    expect(normalizeRecurrence(rule)).toMatchObject({ kind: "weekly", weekdays: ["mon", "tue", "wed", "thu", "fri"] });
+    expect(normalizeRecurrence(rule)).toMatchObject({
+      kind: "weekly",
+      weekdays: ["mon", "tue", "wed", "thu", "fri"],
+    });
   });
 
   it("weekly uses named weekdays", () => {
     const rule: Recurrence = { kind: "weekly", weekdays: ["mon", "thu"], ...base };
-    expect(occurrencesBetween(rule, "2026-09-28", "2026-10-05")).toEqual(["2026-09-28", "2026-10-01", "2026-10-05"]);
+    expect(occurrencesBetween(rule, "2026-09-28", "2026-10-05")).toEqual([
+      "2026-09-28",
+      "2026-10-01",
+      "2026-10-05",
+    ]);
     expect(describeRecurrence(rule)).toBe("매주 월·목");
   });
 

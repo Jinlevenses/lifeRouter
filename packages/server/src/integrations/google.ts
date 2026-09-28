@@ -74,7 +74,11 @@ export class GoogleCalendarProvider implements CalendarProvider {
     return { ...t, refreshToken: t.refreshToken ?? tokens.refreshToken };
   }
 
-  private async call<T>(tokens: GoogleTokens, path: string, init: RequestInit & { etag?: string | null } = {}): Promise<T> {
+  private async call<T>(
+    tokens: GoogleTokens,
+    path: string,
+    init: RequestInit & { etag?: string | null } = {},
+  ): Promise<T> {
     const headers: Record<string, string> = { authorization: `Bearer ${tokens.accessToken}` };
     if (init.body) headers["content-type"] = "application/json";
     if (init.etag) headers["if-match"] = init.etag;
@@ -104,21 +108,29 @@ export class GoogleCalendarProvider implements CalendarProvider {
     let pageToken: string | undefined;
     do {
       const q = new URLSearchParams({ maxResults: "250", ...(pageToken ? { pageToken } : {}) });
-      const page = await this.call<{ items?: { id: string; summary?: string; primary?: boolean }[]; nextPageToken?: string }>(
-        tokens,
-        `/users/me/calendarList?${q}`,
-      );
-      for (const c of page.items ?? []) out.push({ id: c.id, summary: c.summary ?? c.id, primary: !!c.primary });
+      const page = await this.call<{
+        items?: { id: string; summary?: string; primary?: boolean }[];
+        nextPageToken?: string;
+      }>(tokens, `/users/me/calendarList?${q}`);
+      for (const c of page.items ?? [])
+        out.push({ id: c.id, summary: c.summary ?? c.id, primary: !!c.primary });
       pageToken = page.nextPageToken;
     } while (pageToken);
     return out;
   }
 
   async createCalendar(tokens: GoogleTokens, summary: string) {
-    return this.call<{ id: string }>(tokens, "/calendars", { method: "POST", body: JSON.stringify({ summary, timeZone: TIMEZONE }) });
+    return this.call<{ id: string }>(tokens, "/calendars", {
+      method: "POST",
+      body: JSON.stringify({ summary, timeZone: TIMEZONE }),
+    });
   }
 
-  async listEvents(tokens: GoogleTokens, calendarId: string, params: { syncToken?: string; timeMin?: string }) {
+  async listEvents(
+    tokens: GoogleTokens,
+    calendarId: string,
+    params: { syncToken?: string; timeMin?: string },
+  ) {
     const events: GoogleEvent[] = [];
     let pageToken: string | undefined;
     let nextSyncToken: string | null = null;
@@ -127,7 +139,9 @@ export class GoogleCalendarProvider implements CalendarProvider {
         maxResults: "250",
         singleEvents: "true",
         showDeleted: "true",
-        ...(params.syncToken ? { syncToken: params.syncToken } : { timeMin: params.timeMin ?? new Date().toISOString() }),
+        ...(params.syncToken
+          ? { syncToken: params.syncToken }
+          : { timeMin: params.timeMin ?? new Date().toISOString() }),
         ...(pageToken ? { pageToken } : {}),
       });
       const page = await this.call<{ items?: GoogleEvent[]; nextPageToken?: string; nextSyncToken?: string }>(
@@ -150,7 +164,9 @@ export class GoogleCalendarProvider implements CalendarProvider {
       start: when.allDay ? { date: when.startDate } : { dateTime: when.start, timeZone: TIMEZONE },
       // Google's all-day end date is exclusive; ours is inclusive.
       end: when.allDay ? { date: addDays(when.endDate, 1) } : { dateTime: when.end, timeZone: TIMEZONE },
-      ...(localId ? { extendedProperties: { private: { "liferoute.managed": "true", "liferoute.id": localId } } } : {}),
+      ...(localId
+        ? { extendedProperties: { private: { "liferoute.managed": "true", "liferoute.id": localId } } }
+        : {}),
     };
   }
 
@@ -161,18 +177,32 @@ export class GoogleCalendarProvider implements CalendarProvider {
     });
   }
 
-  async patchEvent(tokens: GoogleTokens, calendarId: string, eventId: string, etag: string | null, draft: CalendarEventDraft) {
-    return this.call<GoogleEvent>(tokens, `/calendars/${encodeURIComponent(calendarId)}/events/${encodeURIComponent(eventId)}`, {
-      method: "PATCH",
-      body: JSON.stringify(this.body(draft)),
-      etag,
-    });
+  async patchEvent(
+    tokens: GoogleTokens,
+    calendarId: string,
+    eventId: string,
+    etag: string | null,
+    draft: CalendarEventDraft,
+  ) {
+    return this.call<GoogleEvent>(
+      tokens,
+      `/calendars/${encodeURIComponent(calendarId)}/events/${encodeURIComponent(eventId)}`,
+      {
+        method: "PATCH",
+        body: JSON.stringify(this.body(draft)),
+        etag,
+      },
+    );
   }
 
   async deleteEvent(tokens: GoogleTokens, calendarId: string, eventId: string, etag: string | null) {
-    await this.call<void>(tokens, `/calendars/${encodeURIComponent(calendarId)}/events/${encodeURIComponent(eventId)}`, {
-      method: "DELETE",
-      etag,
-    });
+    await this.call<void>(
+      tokens,
+      `/calendars/${encodeURIComponent(calendarId)}/events/${encodeURIComponent(eventId)}`,
+      {
+        method: "DELETE",
+        etag,
+      },
+    );
   }
 }

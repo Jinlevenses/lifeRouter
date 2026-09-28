@@ -123,7 +123,14 @@ export function toRoutine(r: Row<typeof s.routines>): Routine {
 }
 
 export function toCheckIn(r: Row<typeof s.checkIns>): CheckIn {
-  return { id: r.id, routineId: r.routineId, date: r.date, status: r.status, note: r.note, recordedAt: iso(r.recordedAt) };
+  return {
+    id: r.id,
+    routineId: r.routineId,
+    date: r.date,
+    status: r.status,
+    note: r.note,
+    recordedAt: iso(r.recordedAt),
+  };
 }
 
 export function toAccount(r: Row<typeof s.accounts>): Account {
@@ -180,7 +187,19 @@ export function toNote(r: Row<typeof s.notes>, links: NoteLink[]): Note {
 }
 
 export function toNoteSummary(
-  r: Pick<Row<typeof s.notes>, "id" | "title" | "tags" | "projectId" | "goalId" | "text" | "createdAt" | "updatedAt" | "deletedAt" | "version">,
+  r: Pick<
+    Row<typeof s.notes>,
+    | "id"
+    | "title"
+    | "tags"
+    | "projectId"
+    | "goalId"
+    | "text"
+    | "createdAt"
+    | "updatedAt"
+    | "deletedAt"
+    | "version"
+  >,
   linkCount: number,
   backlinkCount: number,
 ): NoteSummary {
@@ -200,7 +219,9 @@ export function toNoteSummary(
   };
 }
 
-export function toRevisionSummary(r: Pick<Row<typeof s.noteRevisions>, "id" | "noteId" | "version" | "title" | "savedAt">): NoteRevisionSummary {
+export function toRevisionSummary(
+  r: Pick<Row<typeof s.noteRevisions>, "id" | "noteId" | "version" | "title" | "savedAt">,
+): NoteRevisionSummary {
   return { id: r.id, noteId: r.noteId, version: r.version, title: r.title, savedAt: iso(r.savedAt) };
 }
 

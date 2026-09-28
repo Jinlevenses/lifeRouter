@@ -141,7 +141,10 @@ export const checkIns = pgTable(
     note: text("note"),
     recordedAt: ts("recorded_at").notNull().defaultNow(),
   },
-  (t) => [uniqueIndex("check_ins_routine_date_uq").on(t.routineId, t.date), index("check_ins_date_idx").on(t.date)],
+  (t) => [
+    uniqueIndex("check_ins_routine_date_uq").on(t.routineId, t.date),
+    index("check_ins_date_idx").on(t.date),
+  ],
 );
 
 export const accounts = pgTable("accounts", {
@@ -188,7 +191,10 @@ export const notes = pgTable(
     title: text("title").notNull().default(""),
     document: jsonb("document").$type<DocumentNode>().notNull(),
     text: text("text").notNull().default(""),
-    tags: text("tags").array().notNull().default(sql`'{}'::text[]`),
+    tags: text("tags")
+      .array()
+      .notNull()
+      .default(sql`'{}'::text[]`),
     projectId: uuid("project_id").references(() => projects.id),
     goalId: uuid("goal_id").references(() => goals.id),
     ...audit,
@@ -265,7 +271,10 @@ export const connections = pgTable("connections", {
     .notNull()
     .default("disconnected"),
   label: text("label"),
-  scopes: text("scopes").array().notNull().default(sql`'{}'::text[]`),
+  scopes: text("scopes")
+    .array()
+    .notNull()
+    .default(sql`'{}'::text[]`),
   meta: jsonb("meta")
     .$type<{ calendarIds?: string[]; managedCalendarId?: string | null; tossAccountIds?: string[] }>()
     .notNull()
@@ -301,7 +310,10 @@ export const calendarEvents = pgTable(
     managed: boolean("managed").notNull().default(false),
     taskId: uuid("task_id").references(() => tasks.id),
     status: text("status").$type<"confirmed" | "cancelled">().notNull().default("confirmed"),
-    syncStatus: text("sync_status").$type<"local" | "synced" | "pending" | "conflict">().notNull().default("local"),
+    syncStatus: text("sync_status")
+      .$type<"local" | "synced" | "pending" | "conflict">()
+      .notNull()
+      .default("local"),
     lastSyncedAt: ts("last_synced_at"),
     ...audit,
     ...softDelete,
@@ -387,7 +399,9 @@ export const reviews = pgTable("reviews", {
   inputsHash: text("inputs_hash").notNull(),
   computed: jsonb("computed").$type<ReviewComputed>().notNull(),
   draft: jsonb("draft").$type<{ wins: string[]; challenges: string[]; nextFocus: string[] }>().notNull(),
-  owner: jsonb("owner").$type<{ wins: string; challenges: string; nextFocus: string; notes: string }>().notNull(),
+  owner: jsonb("owner")
+    .$type<{ wins: string; challenges: string; nextFocus: string; notes: string }>()
+    .notNull(),
   generatedAt: ts("generated_at").notNull(),
   finalizedAt: ts("finalized_at"),
   ...audit,
@@ -440,7 +454,10 @@ export const guidanceSources = pgTable("guidance_sources", {
   checkedAt: day("checked_at").notNull(),
   effectiveDate: day("effective_date"),
   summary: text("summary").notNull().default(""),
-  eligibility: text("eligibility").$type<"unknown" | "applicable" | "not_applicable">().notNull().default("unknown"),
+  eligibility: text("eligibility")
+    .$type<"unknown" | "applicable" | "not_applicable">()
+    .notNull()
+    .default("unknown"),
   ...audit,
   ...versioned,
 });

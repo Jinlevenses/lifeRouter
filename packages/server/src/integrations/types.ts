@@ -61,7 +61,12 @@ export interface CalendarProvider {
     calendarId: string,
     params: { syncToken?: string; timeMin?: string },
   ): Promise<{ events: GoogleEvent[]; nextSyncToken: string | null }>;
-  insertEvent(tokens: GoogleTokens, calendarId: string, draft: CalendarEventDraft, localId: string): Promise<GoogleEvent>;
+  insertEvent(
+    tokens: GoogleTokens,
+    calendarId: string,
+    draft: CalendarEventDraft,
+    localId: string,
+  ): Promise<GoogleEvent>;
   patchEvent(
     tokens: GoogleTokens,
     calendarId: string,

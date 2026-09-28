@@ -16,7 +16,9 @@ export function selectRetained(
   backups: readonly BackupRef[],
   policy = { daily: 7, weekly: 4, monthly: 12 },
 ): Set<string> {
-  const newestFirst = [...backups].sort((a, b) => (a.createdAt < b.createdAt ? 1 : a.createdAt > b.createdAt ? -1 : 0));
+  const newestFirst = [...backups].sort((a, b) =>
+    a.createdAt < b.createdAt ? 1 : a.createdAt > b.createdAt ? -1 : 0,
+  );
   const keep = new Set<string>();
   const pick = (bucketOf: (date: string) => string, limit: number) => {
     const seen = new Set<string>();

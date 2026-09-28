@@ -54,7 +54,9 @@ export function AppShell({ ownerName, children }: { ownerName: string; children:
                 aria-current={active ? "page" : undefined}
                 className={clsx(
                   "flex items-center gap-3 rounded-[10px] px-3 py-2 text-[15px] font-medium",
-                  active ? "bg-accent-soft text-accent-strong" : "text-ink-muted hover:bg-canvas hover:text-ink",
+                  active
+                    ? "bg-accent-soft text-accent-strong"
+                    : "text-ink-muted hover:bg-canvas hover:text-ink",
                 )}
               >
                 <item.icon className="size-[18px]" aria-hidden />
@@ -113,7 +115,9 @@ export function AppShell({ ownerName, children }: { ownerName: string; children:
               onClick={() => setMoreOpen(true)}
               className={clsx(
                 "flex w-full flex-col items-center gap-0.5 py-2 text-[11px] font-medium",
-                NAV_ITEMS.some((i) => !i.mobile && isActive(pathname, i.href)) ? "text-accent" : "text-ink-muted",
+                NAV_ITEMS.some((i) => !i.mobile && isActive(pathname, i.href))
+                  ? "text-accent"
+                  : "text-ink-muted",
               )}
             >
               <MoreHorizontal className="size-5" aria-hidden />

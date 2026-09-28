@@ -7,14 +7,35 @@ import { addDays, compareDate, daysInMonth, diffDays, isoWeekday, maxDate, parse
  * - A monthly day of 29–31 clamps to the month's last day (Jan 31 → Feb 28/29).
  * - Nothing occurs before `startDate` or after `endDate` (both inclusive).
  */
-export const WEEKDAY_ISO: Record<Weekday, number> = { mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6, sun: 7 };
+export const WEEKDAY_ISO: Record<Weekday, number> = {
+  mon: 1,
+  tue: 2,
+  wed: 3,
+  thu: 4,
+  fri: 5,
+  sat: 6,
+  sun: 7,
+};
 export const WEEKDAYS: readonly Weekday[] = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
-const WEEKDAY_KO: Record<Weekday, string> = { mon: "월", tue: "화", wed: "수", thu: "목", fri: "금", sat: "토", sun: "일" };
+const WEEKDAY_KO: Record<Weekday, string> = {
+  mon: "월",
+  tue: "화",
+  wed: "수",
+  thu: "목",
+  fri: "금",
+  sat: "토",
+  sun: "일",
+};
 
 /** Rewrites `weekday` as weekly mon..fri so later code handles one shape. */
 export function normalizeRecurrence(rule: Recurrence): Recurrence {
   if (rule.kind !== "weekday") return rule;
-  return { kind: "weekly", weekdays: ["mon", "tue", "wed", "thu", "fri"], startDate: rule.startDate, endDate: rule.endDate };
+  return {
+    kind: "weekly",
+    weekdays: ["mon", "tue", "wed", "thu", "fri"],
+    startDate: rule.startDate,
+    endDate: rule.endDate,
+  };
 }
 
 export function occursOn(rule: Recurrence, date: string): boolean {

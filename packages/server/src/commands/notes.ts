@@ -17,7 +17,10 @@ function checkDocument(doc: DocumentNode) {
 
 async function checkRefs(ctx: CommandContext, projectId: string | null, goalId: string | null) {
   if (projectId) {
-    const [row] = await ctx.tx.select({ d: projects.deletedAt }).from(projects).where(eq(projects.id, projectId));
+    const [row] = await ctx.tx
+      .select({ d: projects.deletedAt })
+      .from(projects)
+      .where(eq(projects.id, projectId));
     if (!row || row.d) throw notFound("프로젝트");
   }
   if (goalId) {
@@ -69,7 +72,13 @@ export async function noteCreate(ctx: CommandContext, p: P<"note.create">): R<"n
 async function saveContent(
   ctx: CommandContext,
   current: typeof notes.$inferSelect,
-  next: { title: string; document: DocumentNode; tags: string[]; projectId: string | null; goalId: string | null },
+  next: {
+    title: string;
+    document: DocumentNode;
+    tags: string[];
+    projectId: string | null;
+    goalId: string | null;
+  },
 ) {
   const [revision] = await ctx.tx
     .insert(noteRevisions)
@@ -120,7 +129,10 @@ export async function noteDelete(ctx: CommandContext, p: P<"note.delete">): R<"n
   return { note: toNoteSummary(row!, 0, 0) };
 }
 
-export async function noteRestoreRevision(ctx: CommandContext, p: P<"note.restoreRevision">): R<"note.restoreRevision"> {
+export async function noteRestoreRevision(
+  ctx: CommandContext,
+  p: P<"note.restoreRevision">,
+): R<"note.restoreRevision"> {
   const current = await lockNote(ctx, p.noteId, p.expectedVersion);
   const [revision] = await ctx.tx
     .select()
