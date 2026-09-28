@@ -182,3 +182,41 @@ export function formatDateKo(value: string, withWeekday = true): string {
   const { m, d } = parseDate(value);
   return withWeekday ? `${m}월 ${d}일 (${koWeekday(isoWeekday(value))})` : `${m}월 ${d}일`;
 }
+
+/** "YYYY-MM" of a date-only value (Asia/Seoul calendar month when `value` came from todayInZone). */
+export function monthKey(value: string): string {
+  return value.slice(0, 7);
+}
+
+/** ISO-8601 week-numbering year and week (weeks start Monday; week 1 contains the first Thursday). */
+export function isoWeek(value: string): { year: number; week: number } {
+  const thursday = addDays(value, 4 - isoWeekday(value));
+  const { y } = parseDate(thursday);
+  const week = Math.floor(diffDays(`${String(y).padStart(4, "0")}-01-01`, thursday) / 7) + 1;
+  return { year: y, week };
+}
+
+export type PeriodKind = "weekly" | "monthly";
+
+export interface Period {
+  kind: PeriodKind;
+  start: string;
+  /** Inclusive. */
+  end: string;
+  /** "weekly:2026-W40" | "monthly:2026-09" */
+  key: string;
+}
+
+/** The review period (ISO week Mon–Sun, or calendar month) that contains `date`. */
+export function periodContaining(kind: PeriodKind, date: string): Period {
+  if (kind === "weekly") {
+    const start = startOfIsoWeek(date);
+    const { year, week } = isoWeek(date);
+    return { kind, start, end: addDays(start, 6), key: `weekly:${year}-W${String(week).padStart(2, "0")}` };
+  }
+  return { kind, start: startOfMonth(date), end: endOfMonth(date), key: `monthly:${monthKey(date)}` };
+}
+
+export function isWithin(date: string, from: string, to: string): boolean {
+  return date >= from && date <= to;
+}

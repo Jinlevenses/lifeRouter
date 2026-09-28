@@ -9,8 +9,8 @@ export type Dec = InstanceType<typeof D>;
 
 /** Plain decimal string: optional minus, no exponent, no leading "+", no thousands separators. */
 export const DECIMAL_RE = /^-?(0|[1-9]\d*)(\.\d+)?$/;
-/** Money has at most 4 fractional digits (KRW uses 0, USD 2; 4 leaves room for stored FX-converted values). */
-export const MONEY_RE = /^-?(0|[1-9]\d{0,17})(\.\d{1,4})?$/;
+/** Money (same as packages/contracts MONEY_RE): at most 4 fractional digits; KRW results are rounded to whole won. */
+export const MONEY_RE = /^-?(0|[1-9]\d*)(\.\d{1,4})?$/;
 
 export function isDecimalString(value: unknown): value is string {
   return typeof value === "string" && DECIMAL_RE.test(value) && value !== "-0";
@@ -75,13 +75,15 @@ export function neg(a: string): string {
   return toDecimalString(dec(a).negated());
 }
 
-export type RoundingMode = "halfUp" | "up" | "down" | "halfEven";
+export type RoundingMode = "halfUp" | "up" | "down" | "halfEven" | "ceil" | "floor";
 
 const ROUNDING: Record<RoundingMode, Decimal.Rounding> = {
   halfUp: Decimal.ROUND_HALF_UP,
   up: Decimal.ROUND_UP,
   down: Decimal.ROUND_DOWN,
   halfEven: Decimal.ROUND_HALF_EVEN,
+  ceil: Decimal.ROUND_CEIL,
+  floor: Decimal.ROUND_FLOOR,
 };
 
 export function round(a: string, fractionDigits: number, mode: RoundingMode = "halfUp"): string {

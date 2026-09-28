@@ -14,7 +14,7 @@ import {
   toKrw,
 } from "../src/money";
 
-describe("money (ADR-002 exact decimal)", () => {
+describe("UNIT-MONEY-001 money (ADR-002 exact decimal)", () => {
   it("adds without float error", () => {
     expect(add("0.1", "0.2")).toBe("0.3");
     expect(sum(["100000000", "-25000000.5", "0.5"])).toBe("75000000");
