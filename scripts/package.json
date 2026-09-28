@@ -12,7 +12,8 @@
     "@liferoute/server": "workspace:*",
     "drizzle-orm": "^0.45.3",
     "fflate": "^0.8.3",
-    "pg": "^8.23.0"
+    "pg": "^8.23.0",
+    "pg-boss": "^12.35.0"
   },
   "devDependencies": {
     "@types/pg": "^8.23.1"
