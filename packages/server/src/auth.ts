@@ -82,11 +82,10 @@ export async function createOwner(
   if (input.password.length < 12) throw new Error("Password must be at least 12 characters.");
   const ctx = await auth.$context;
   const hash = await ctx.password.hash(input.password);
-  const created = await ctx.internalAdapter.createUser({
-    email: input.email.trim().toLowerCase(),
-    name: input.name.trim(),
-    emailVerified: true,
-  });
+  const created = await ctx.internalAdapter.createUser(
+    { email: input.email.trim().toLowerCase(), name: input.name.trim(), emailVerified: true },
+    { method: "email-password" },
+  );
   await ctx.internalAdapter.linkAccount({
     userId: created.id,
     providerId: "credential",
