@@ -42,9 +42,14 @@ export async function GET(request: Request) {
     try {
       const tokens = await calendar.exchangeCode(code, googleRedirectUri(request));
       const calendars = await calendar.listCalendars(tokens);
+      // Reuse the calendar this app created on a previous connection; otherwise create a new one.
+      // Never adopt a same-named calendar the owner made: calendar.app.created cannot write to it.
+      const [current] = await db.select().from(connections).where(eq(connections.provider, "google"));
+      const previous = current?.meta.managedCalendarId;
       const managed =
-        calendars.find((c) => c.summary === MANAGED_CALENDAR) ??
-        (await calendar.createCalendar(tokens, MANAGED_CALENDAR));
+        previous && calendars.some((c) => c.id === previous)
+          ? { id: previous }
+          : await calendar.createCalendar(tokens, MANAGED_CALENDAR);
       const now = new Date();
       await db
         .update(connections)

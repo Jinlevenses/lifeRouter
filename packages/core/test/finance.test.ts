@@ -92,6 +92,17 @@ describe("UNIT-FIN-001 net worth (FR-005)", () => {
     expect(past.netWorthKrw).toBe("50");
   });
 
+  it("judges staleness relative to the evaluation date, not today", () => {
+    const past = computeNetWorth({
+      ...base,
+      asOf: "2026-05-31",
+      accounts: [acc("a", "asset")],
+      snapshots: [snap("a", "2026-05-20", "100")],
+    });
+    expect(past.staleAccountIds).toEqual([]);
+    expect(past.data).toBe("complete");
+  });
+
   it("converts foreign snapshots to whole won", () => {
     expect(snapshotAmountKrw("1000.25", "USD", "1385.12")).toBe("1385466");
     expect(snapshotAmountKrw("5000", "KRW", null)).toBe("5000");

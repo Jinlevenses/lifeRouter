@@ -1,3 +1,4 @@
+import { sql } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { loadWorkspace } from "../src/workspace";
 import { loadNoteDetail, noteMarkdown } from "../src/notes-read";
@@ -415,10 +416,30 @@ describe("INT-AI-CONSENT-001 / INT-CAL-001 disconnected integrations (FR-008, FR
   });
 });
 
+describe("INT-API-001 client-supplied ids", () => {
+  it("answers 422 (not 500) when a client reuses an existing id", async () => {
+    const { account } = await h.ok({
+      type: "account.create",
+      payload: { name: "a", kind: "asset", category: "cash" },
+    });
+    const dup = await h.run({
+      type: "account.create",
+      payload: { id: account.id, name: "b", kind: "asset", category: "cash" },
+    });
+    expect(dup.status).toBe(422);
+  });
+});
+
 describe("SEC-001 read model has no secrets", () => {
   it("never exposes token hashes or connection secrets", async () => {
-    const created = await h.ok({ type: "token.create", payload: { label: "iPhone", scope: "capture" } });
+    const created = await h.ok({
+      type: "token.create",
+      payload: { label: "iPhone", scope: "capture" },
+      idempotencyKey: "token-create-0001",
+    });
     expect(created.secret).toMatch(/^lrc_/);
+    const logged = await h.db.execute(sql`select response::text as r from command_log`);
+    expect(JSON.stringify(logged.rows)).not.toContain(created.secret);
     const ws = await loadWorkspace(h.db, h.now);
     const json = JSON.stringify(ws);
     expect(json).not.toContain(created.secret);

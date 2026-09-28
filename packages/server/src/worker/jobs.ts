@@ -135,21 +135,70 @@ export async function heartbeat(db: Db, now = new Date()): Promise<void> {
     .onConflictDoUpdate({ target: opsState.key, set: { value: { at: now.toISOString() }, updatedAt: now } });
 }
 
-/** Re-enqueues work whose post-commit enqueue may have been lost (idempotent job bodies make this safe). */
+/** Analyses stuck in `running` this long are assumed interrupted (worker crash or restart). */
+export const STUCK_ANALYSIS_MS = 10 * 60_000;
+
+/**
+ * Re-enqueues work whose post-commit enqueue may have been lost (idempotent job bodies make this
+ * safe), and fails analyses interrupted mid-call. An interrupted call may still have been billed,
+ * so its estimate is recorded as used: the monthly cap errs on the safe side.
+ */
 export async function sweep(db: Db, jobs: JobQueue, now = new Date()): Promise<number> {
   const olderThan = new Date(now.getTime() - 2 * 60_000);
-  const [approved, queued] = await Promise.all([
-    db
-      .select({ id: proposals.id })
-      .from(proposals)
-      .where(and(eq(proposals.status, "approved"), lt(proposals.updatedAt, olderThan))),
-    db
-      .select({ id: analyses.id })
-      .from(analyses)
-      .where(and(eq(analyses.status, "queued"), lt(analyses.updatedAt, olderThan))),
-  ]);
+  const approved = await db
+    .select({ id: proposals.id })
+    .from(proposals)
+    .where(and(eq(proposals.status, "approved"), lt(proposals.updatedAt, olderThan)));
+  const queued = await db
+    .select({ id: analyses.id })
+    .from(analyses)
+    .where(and(eq(analyses.status, "queued"), lt(analyses.updatedAt, olderThan)));
   for (const p of approved)
     await jobs.send(JOB_NAMES.googleApplyProposal, { proposalId: p.id }, { singletonKey: p.id });
   for (const a of queued) await jobs.send(JOB_NAMES.aiAnalysis, { analysisId: a.id }, { singletonKey: a.id });
-  return approved.length + queued.length;
+  const pendingOcr = await db
+    .select({ id: receipts.id })
+    .from(receipts)
+    .where(
+      and(
+        eq(receipts.status, "draft"),
+        sql`${receipts.ocr}->>'status' = 'pending'`,
+        lt(receipts.updatedAt, olderThan),
+      ),
+    );
+  for (const r of pendingOcr)
+    await jobs.send(JOB_NAMES.receiptOcr, { receiptId: r.id }, { singletonKey: r.id });
+
+  const stuck = await db
+    .update(analyses)
+    .set({
+      status: "failed",
+      error: "작업이 중단되었습니다. 비용은 예상치로 기록했습니다.",
+      finishedAt: now,
+      updatedAt: now,
+      version: sql`version + 1`,
+    })
+    .where(
+      and(
+        eq(analyses.status, "running"),
+        lt(analyses.startedAt, new Date(now.getTime() - STUCK_ANALYSIS_MS)),
+      ),
+    )
+    .returning();
+  for (const a of stuck) {
+    if (!a.estimate) continue;
+    await db.insert(aiUsage).values({
+      id: randomUUID(),
+      analysisId: a.id,
+      monthKey: a.estimate.monthKey,
+      provider: a.provider,
+      model: a.model ?? "unknown",
+      inputTokens: a.estimate.inputTokens,
+      outputTokens: a.estimate.outputTokens,
+      estimatedCostKrw: a.estimate.costKrw,
+      actualCostKrw: null,
+      occurredAt: now,
+    });
+  }
+  return approved.length + queued.length + pendingOcr.length + stuck.length;
 }

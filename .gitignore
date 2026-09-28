@@ -17,8 +17,9 @@ next-env.d.ts
 /.liferoute/
 *.pem
 *.key
-backups/
-attachments/
+# Runtime data directories at the repository root only (never source folders like api/v1/attachments)
+/backups/
+/attachments/
 
 # Playwright
 e2e/.auth/

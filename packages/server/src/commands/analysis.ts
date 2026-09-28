@@ -119,11 +119,8 @@ export async function analysisExecute(ctx: CommandContext, p: P<"analysis.execut
     throw invalidTransition("미리보기 상태의 분석만 실행할 수 있습니다.");
   const estimate = await estimateFor(ctx, row.noteIds, row.id);
   if (estimate.costKrw !== canon(p.consentEstimateKrw)) {
-    // Keep the refreshed estimate so the owner can review it and consent again.
-    await ctx.tx
-      .update(analyses)
-      .set({ estimate, updatedAt: ctx.now, version: sql`version + 1` })
-      .where(eq(analyses.id, row.id));
+    // Nothing is persisted here (the transaction rolls back on error); the new estimate travels in
+    // the error so the owner can review it and consent to that exact amount.
     throw new DomainError(
       "AI_CONSENT_STALE",
       "동의한 예상 비용과 현재 예상 비용이 다릅니다.",

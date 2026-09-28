@@ -14,7 +14,7 @@ import { add, cmp, div, isPositive, sub, toKrw } from "./money";
  * - netWorth = Σ included assets − Σ ALL liabilities (liabilities cannot be excluded; archive removes them).
  * - liquidAssets = Σ included & liquid assets, liabilities not subtracted.
  * - An account without a snapshot on/before `asOf` is "missing" and contributes 0.
- * - "stale" = latest snapshot older than today − staleAfterDays. Either makes data "incomplete".
+ * - "stale" = latest snapshot older than asOf − staleAfterDays. Either makes data "incomplete".
  * - Goal: gap = goal − netWorth; monthlyRequired = ceil(gap / remainingMonths) in whole KRW.
  */
 type AccountLike = Pick<Account, "id" | "kind" | "included" | "liquid" | "archivedAt">;
@@ -64,7 +64,8 @@ export function computeNetWorth(input: NetWorthInput): NetWorthSummary {
   const asOf = input.asOf ?? input.today;
   const accounts = activeAccountsOn(input.accounts, asOf, input.timeZone);
   const latest = latestSnapshots(input.snapshots, asOf);
-  const staleBefore = addDays(input.today, -input.finance.staleAfterDays);
+  // Staleness is relative to the evaluation date: a review of last month judges last month's data.
+  const staleBefore = addDays(asOf, -input.finance.staleAfterDays);
 
   let assets = "0";
   let liabilities = "0";

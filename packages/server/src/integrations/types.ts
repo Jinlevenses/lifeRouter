@@ -61,6 +61,8 @@ export interface CalendarProvider {
     calendarId: string,
     params: { syncToken?: string; timeMin?: string },
   ): Promise<{ events: GoogleEvent[]; nextSyncToken: string | null }>;
+  /** The event previously written for `localId` (extendedProperties liferoute.id), if any. */
+  findByLocalId(tokens: GoogleTokens, calendarId: string, localId: string): Promise<GoogleEvent | null>;
   insertEvent(
     tokens: GoogleTokens,
     calendarId: string,

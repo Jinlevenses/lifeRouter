@@ -210,16 +210,14 @@ export async function applyProposal(
     if (proposal.kind === "calendar.create") {
       const calendarId = proposal.targetCalendarId ?? conn.meta.managedCalendarId;
       if (!calendarId) return fail("LifeRoute 전용 캘린더가 없습니다. 연결을 다시 설정하세요.");
-      const localId = randomUUID();
-      const created = await provider.insertEvent(
-        tokens,
-        calendarId,
-        proposal.draft as CalendarEventDraft,
-        localId,
-      );
-      await db.insert(calendarEvents).values({
-        id: localId,
-        source: "google",
+      // Idempotent across retries/crashes: the proposal id is the event's local id, and an event
+      // already carrying it in Google (inserted by an earlier attempt) is reused, never duplicated.
+      const localId = proposal.id;
+      const created =
+        (await provider.findByLocalId(tokens, calendarId, localId)) ??
+        (await provider.insertEvent(tokens, calendarId, proposal.draft as CalendarEventDraft, localId));
+      const values = {
+        source: "google" as const,
         connectionId: conn.id,
         externalCalendarId: calendarId,
         externalId: created.id,
@@ -230,11 +228,15 @@ export async function applyProposal(
         ...draftColumns(proposal.draft!),
         managed: true,
         taskId: proposal.taskId,
-        syncStatus: "synced",
+        syncStatus: "synced" as const,
         lastSyncedAt: now,
-        createdAt: now,
         updatedAt: now,
-      });
+      };
+      // A sync may already have imported it under the same id.
+      await db
+        .insert(calendarEvents)
+        .values({ id: localId, ...values, createdAt: now })
+        .onConflictDoUpdate({ target: calendarEvents.id, set: values });
       await db
         .update(proposals)
         .set({

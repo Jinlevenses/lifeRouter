@@ -72,6 +72,12 @@ export function validationFailed(
   });
 }
 
+/** Name of the violated unique constraint, if `error` is a PostgreSQL unique violation. */
+export function uniqueConstraint(error: unknown): string | null {
+  const e = findPgError(error);
+  return e && e.code === "23505" ? (e.constraint ?? "") : null;
+}
+
 /** PostgreSQL unique violation on a named constraint/index. */
 export function isUniqueViolation(error: unknown, constraint?: string): boolean {
   const e = findPgError(error);

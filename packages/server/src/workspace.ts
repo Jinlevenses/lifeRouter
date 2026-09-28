@@ -236,11 +236,15 @@ export function buildTodayView(
   events: WorkspaceData["calendarEvents"],
 ): TodayView {
   const index = indexCheckIns(checkIns);
+  // Timed events overlap [today 00:00, tomorrow 00:00) in Seoul; the end is exclusive, so an
+  // event ending exactly at midnight does not spill into the next day.
+  const dayStart = startOfDayInstant(today, TIMEZONE);
+  const dayEnd = startOfDayInstant(addDays(today, 1), TIMEZONE);
   const eventOnDay = (e: WorkspaceData["calendarEvents"][number]) =>
     e.status !== "cancelled" &&
     (e.when.allDay
       ? e.when.startDate <= today && e.when.endDate >= today
-      : dateInZone(e.when.start, TIMEZONE) <= today && dateInZone(e.when.end, TIMEZONE) >= today);
+      : Date.parse(e.when.start) < Date.parse(dayEnd) && Date.parse(e.when.end) > Date.parse(dayStart));
   return {
     date: today,
     topTaskIds: topTasksFor(tasks, today).map((t) => t.id),

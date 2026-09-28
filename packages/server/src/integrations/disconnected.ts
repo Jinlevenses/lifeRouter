@@ -18,6 +18,7 @@ export const disconnectedCalendar: CalendarProvider = {
   listCalendars: disconnected("Google Calendar"),
   createCalendar: disconnected("Google Calendar"),
   listEvents: disconnected("Google Calendar"),
+  findByLocalId: disconnected("Google Calendar"),
   insertEvent: disconnected("Google Calendar"),
   patchEvent: disconnected("Google Calendar"),
   deleteEvent: disconnected("Google Calendar"),

@@ -51,6 +51,16 @@ class FakeCalendar implements CalendarProvider {
       nextSyncToken: `sync-${this.syncCalls.length}`,
     };
   }
+  async findByLocalId(_t: GoogleTokens, calendarId: string, localId: string) {
+    return (
+      [...this.events.values()].find(
+        (e) =>
+          e.calendarId === calendarId &&
+          e.extendedProperties?.private?.["liferoute.id"] === localId &&
+          e.status !== "cancelled",
+      ) ?? null
+    );
+  }
   async insertEvent(_t: GoogleTokens, calendarId: string, draft: { title: string }, localId: string) {
     const id = `g${this.events.size + 1}`;
     const event = {
@@ -201,6 +211,34 @@ describe("INT-GCAL-001 / INT-GCAL-002 Google read sync and approved managed writ
     ws = await loadWorkspace(h.db, h.now);
     expect(ws.proposals.find((p) => p.id === update.id)).toMatchObject({ status: "failed" });
     expect(google.events.get(created.id)?.summary).toBe("병원");
+
+    // Re-running an apply (retry after a crash) never duplicates the Google event.
+    const { proposal: again } = await h.ok({
+      type: "calendar.propose",
+      payload: {
+        kind: "calendar.create",
+        draft: {
+          title: "치과",
+          description: "",
+          location: null,
+          when: { allDay: true, startDate: "2026-10-02", endDate: "2026-10-02" },
+        },
+      },
+    });
+    await h.ok({
+      type: "calendar.approve",
+      payload: { proposalId: again.id, expectedVersion: again.version },
+    });
+    const partial = await google.insertEvent(
+      {} as GoogleTokens,
+      "managed",
+      { title: "치과" } as never,
+      again.id,
+    ); // first attempt got this far, then crashed
+    await applyProposal(h.db, google, again.id, h.now);
+    expect([...google.events.values()].filter((e) => e.summary === "치과")).toHaveLength(1);
+    ws = await loadWorkspace(h.db, h.now);
+    expect(ws.calendarEvents.find((e) => e.id === again.id)?.externalId).toBe(partial.id);
   });
 
   it("resyncs fully when Google expires the sync token (410)", async () => {

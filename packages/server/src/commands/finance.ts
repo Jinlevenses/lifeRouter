@@ -8,7 +8,7 @@ import {
   type CommandResultMap,
   type NetWorthSummary,
 } from "@liferoute/contracts";
-import { computeNetWorth, snapshotAmountKrw } from "@liferoute/core";
+import { computeNetWorth, isPositive, snapshotAmountKrw } from "@liferoute/core";
 import { accounts, balanceSnapshots } from "../db/schema";
 import { DomainError, notFound } from "../errors";
 import { toAccount, toSnapshot } from "../mappers";
@@ -135,6 +135,9 @@ export async function snapshotAdd(ctx: CommandContext, p: P<"snapshot.add">): R<
     );
   }
   const fxRate = account.currency === BASE_CURRENCY ? null : p.fxRate;
+  if (fxRate !== null && !isPositive(fxRate)) {
+    throw new DomainError("FX_RATE_REQUIRED", "환율은 0보다 커야 합니다.");
+  }
   const values = {
     amount: p.amount,
     currency: account.currency,

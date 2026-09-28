@@ -6,12 +6,13 @@ import {
   TIMEZONE,
   type CommandOk,
   type CommandResponse,
+  type CommandResultMap,
   type CommandType,
 } from "@liferoute/contracts";
 import { stableStringify, todayInZone } from "@liferoute/core";
 import type { Db } from "../db/client";
 import { commandLog, settings } from "../db/schema";
-import { DomainError, internalError, isUniqueViolation, validationFailed } from "../errors";
+import { DomainError, internalError, isUniqueViolation, uniqueConstraint, validationFailed } from "../errors";
 import type { Integrations } from "../integrations";
 import type { JobQueue } from "../jobs";
 import { log } from "../logger";
@@ -106,7 +107,7 @@ export async function executeCommand(
           commandType: command.type,
           payloadHash,
           statusCode: 200,
-          response: ok,
+          response: loggableResponse(ok),
           createdAt: now,
         });
       }
@@ -133,9 +134,30 @@ export async function executeCommand(
     if (isUniqueViolation(error, "tasks_top_slot_uq")) {
       return fail(new DomainError("TOP_RANK_TAKEN", "그 순위는 이미 다른 할 일이 차지하고 있습니다."));
     }
+    // A client-supplied id that already exists (e.g. an offline retry under a new key).
+    if (uniqueConstraint(error)?.endsWith("_pkey")) {
+      return fail(
+        new DomainError(
+          "VALIDATION_FAILED",
+          "이미 사용 중인 id입니다.",
+          undefined,
+          "새로 고친 뒤 다시 시도하세요.",
+        ),
+      );
+    }
     log.error("command.failed", error, { type: command.type });
     return fail(internalError());
   }
+}
+
+/**
+ * What the idempotency ledger keeps. Secrets that must be shown only once (the capture token)
+ * are never persisted; a replay of token.create therefore returns the token without its secret.
+ */
+function loggableResponse(ok: CommandOk): CommandOk {
+  if (ok.type !== "token.create") return ok;
+  const result = ok.result as CommandResultMap["token.create"];
+  return { ...ok, result: { ...result, secret: "" } } as CommandOk;
 }
 
 async function findReplay(db: Db, key: string, payloadHash: string): Promise<ExecuteOutcome | null> {

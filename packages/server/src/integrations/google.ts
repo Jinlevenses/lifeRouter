@@ -86,8 +86,11 @@ export class GoogleCalendarProvider implements CalendarProvider {
     if (response.status === 204) return undefined as T;
     if (!response.ok) {
       const text = maskSecrets(await response.text().catch(() => ""));
+      // 403 can be a rate/quota limit rather than revoked access; only real auth failures need re-consent.
+      const rateLimited =
+        response.status === 403 && /rateLimitExceeded|userRateLimitExceeded|quotaExceeded/.test(text);
       const kind =
-        response.status === 401 || response.status === 403
+        response.status === 401 || (response.status === 403 && !rateLimited)
           ? "auth"
           : response.status === 410
             ? "gone"
@@ -95,7 +98,7 @@ export class GoogleCalendarProvider implements CalendarProvider {
               ? "conflict"
               : response.status === 404
                 ? "notFound"
-                : response.status === 429 || response.status >= 500
+                : rateLimited || response.status === 429 || response.status >= 500
                   ? "transient"
                   : "config";
       throw new IntegrationError(`Google API ${response.status}: ${text.slice(0, 200)}`, kind);
@@ -168,6 +171,15 @@ export class GoogleCalendarProvider implements CalendarProvider {
         ? { extendedProperties: { private: { "liferoute.managed": "true", "liferoute.id": localId } } }
         : {}),
     };
+  }
+
+  async findByLocalId(tokens: GoogleTokens, calendarId: string, localId: string) {
+    const q = new URLSearchParams({ privateExtendedProperty: `liferoute.id=${localId}`, maxResults: "5" });
+    const page = await this.call<{ items?: GoogleEvent[] }>(
+      tokens,
+      `/calendars/${encodeURIComponent(calendarId)}/events?${q}`,
+    );
+    return (page.items ?? []).find((e) => e.status !== "cancelled") ?? null;
   }
 
   async insertEvent(tokens: GoogleTokens, calendarId: string, draft: CalendarEventDraft, localId: string) {

@@ -39,9 +39,14 @@ async function buildZip(
   if (format === "liferoute-export") {
     // Portable Markdown copies of every live note, alongside the JSON data.
     const noteRows = await db.select().from(notes);
+    const shaById = new Map(attachmentRows.map((a) => [a.id, a.sha256]));
     for (const n of noteRows) {
       if (n.deletedAt) continue;
-      const md = toMarkdown(n.title, n.document, { attachmentUrl: (id) => `../attachments/by-id/${id}` });
+      // Images point at the files stored in this same zip (attachments/<sha256>).
+      const md = toMarkdown(n.title, n.document, {
+        attachmentUrl: (id) =>
+          shaById.has(id) ? `../attachments/${shaById.get(id)}` : `missing-attachment-${id}`,
+      });
       const safe =
         (n.title || "note")
           .replace(/[\\/:*?"<>|\n\r]+/g, " ")

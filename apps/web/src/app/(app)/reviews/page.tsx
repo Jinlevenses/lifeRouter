@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { Bot, CalendarRange, Lock, RefreshCw } from "lucide-react";
 import clsx from "clsx";
-import type { Analysis, Review } from "@liferoute/contracts";
+import type { Analysis, CostEstimate, Review } from "@liferoute/contracts";
 import { formatDateKo, formatKrw, periodContaining } from "@liferoute/core";
 import { Badge, Card, CardHeader, EmptyState, PageHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -378,7 +378,10 @@ function AiAnalysis() {
 function AnalysisRow({ analysis }: { analysis: Analysis }) {
   const { ws, run } = useWorkspace();
   const [consent, setConsent] = useState(false);
-  const cost = analysis.estimate?.costKrw ?? "0";
+  // When notes changed since the preview, the server returns a fresh estimate; consent must be given again.
+  const [refreshed, setRefreshed] = useState<CostEstimate | null>(null);
+  const estimate = refreshed ?? analysis.estimate;
+  const cost = estimate?.costKrw ?? "0";
   return (
     <li className="py-3">
       <div className="flex flex-wrap items-center gap-2">
@@ -401,8 +404,13 @@ function AnalysisRow({ analysis }: { analysis: Analysis }) {
             checked={consent}
             onChange={setConsent}
             label={`선택한 노트 ${analysis.noteIds.length}개의 원문을 AI(${analysis.model ?? ""})에 보내는 것에 동의합니다.`}
-            description={`예상 비용 ${formatKrw(cost)} · 이번 달 남은 예산 ${formatKrw(analysis.estimate?.remainingKrw ?? "0")}`}
+            description={`예상 비용 ${formatKrw(cost)} · 이번 달 남은 예산 ${formatKrw(estimate?.remainingKrw ?? "0")}`}
           />
+          {refreshed ? (
+            <p className="text-[12px] font-semibold text-warn">
+              노트가 바뀌어 예상 비용이 {formatKrw(cost)}으로 다시 계산되었습니다. 다시 확인해 주세요.
+            </p>
+          ) : null}
           <div className="flex gap-2">
             <Button
               size="sm"
@@ -419,7 +427,15 @@ function AnalysisRow({ analysis }: { analysis: Analysis }) {
                       consentEstimateKrw: cost,
                     },
                   },
-                  { success: "분석을 요청했습니다." },
+                  {
+                    success: "분석을 요청했습니다.",
+                    onError: (e) => {
+                      if (e.code !== "AI_CONSENT_STALE") return false;
+                      setRefreshed((e.details as { estimate: CostEstimate }).estimate);
+                      setConsent(false);
+                      return true;
+                    },
+                  },
                 )
               }
             >
