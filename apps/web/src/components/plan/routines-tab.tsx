@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { Check, Minus, Pencil, Plus } from "lucide-react";
-import clsx from "clsx";
+import { cn } from "@/lib/utils";
 import type { Recurrence, Routine, RoutineDayState } from "@liferoute/contracts";
 import {
   addDays,
@@ -14,10 +14,10 @@ import {
   isoWeekday,
   koWeekday,
 } from "@liferoute/core";
-import { Badge, Card, EmptyState } from "@/components/ui/card";
+import { Badge, Card, EmptyState } from "@/components/app/card";
 import { Button } from "@/components/ui/button";
-import { Sheet } from "@/components/ui/dialog";
-import { Field, Select, TextArea, TextInput } from "@/components/ui/fields";
+import { Sheet } from "@/components/app/dialog";
+import { Field, Select, TextArea, TextInput } from "@/components/app/fields";
 import { useWorkspace } from "@/lib/workspace";
 import { RecurrenceEditor } from "./recurrence-editor";
 
@@ -48,7 +48,7 @@ export function RoutinesTab() {
   return (
     <div className="space-y-4">
       <div className="flex justify-end">
-        <Button variant="primary" onClick={() => setEditing(null)}>
+        <Button onClick={() => setEditing(null)}>
           <Plus className="size-4" aria-hidden /> 새 루틴
         </Button>
       </div>
@@ -63,16 +63,16 @@ export function RoutinesTab() {
             <caption className="sr-only">최근 7일 루틴 기록</caption>
             <thead>
               <tr>
-                <th scope="col" className="pb-1 text-left text-[13px] font-semibold text-ink-muted">
+                <th scope="col" className="pb-1 text-left text-[13px] font-semibold text-muted-foreground">
                   루틴
                 </th>
                 {days.map((d) => (
                   <th
                     key={d}
                     scope="col"
-                    className={clsx(
+                    className={cn(
                       "pb-1 text-center text-[12px] font-semibold",
-                      d === ws.today ? "text-accent-strong" : "text-ink-muted",
+                      d === ws.today ? "text-primary" : "text-muted-foreground",
                     )}
                   >
                     {koWeekday(isoWeekday(d))}
@@ -89,7 +89,7 @@ export function RoutinesTab() {
                 <tr key={r.id}>
                   <th scope="row" className="max-w-[12rem] pr-2 text-left align-middle font-normal">
                     <span className="block truncate text-[15px] font-semibold">{r.title}</span>
-                    <span className="text-[12px] text-ink-muted">
+                    <span className="text-[12px] text-muted-foreground">
                       {describeRecurrence(r.schedule)} · 연속 {currentStreak(r, index, ws.today)}일
                     </span>
                     {r.status !== "active" ? (
@@ -104,12 +104,12 @@ export function RoutinesTab() {
                           type="button"
                           onClick={() => cycle(r, d, state)}
                           aria-label={`${r.title} ${d} ${LABEL[state]} (눌러서 바꾸기)`}
-                          className={clsx(
+                          className={cn(
                             "mx-auto flex size-9 items-center justify-center rounded-full",
-                            state === "done" && "bg-accent text-white",
-                            state === "skipped" && "bg-line text-ink-muted",
-                            state === "unrecorded" && "border-2 border-dashed border-line-strong",
-                            state === "notExpected" && "text-ink-subtle hover:bg-canvas",
+                            state === "done" && "bg-primary text-primary-foreground",
+                            state === "skipped" && "bg-border text-muted-foreground",
+                            state === "unrecorded" && "border-2 border-dashed border-input",
+                            state === "notExpected" && "text-muted-foreground hover:bg-muted",
                           )}
                         >
                           {state === "done" ? (
@@ -139,7 +139,7 @@ export function RoutinesTab() {
               ))}
             </tbody>
           </table>
-          <p className="mt-2 text-[12px] text-ink-muted">
+          <p className="mt-2 text-[12px] text-muted-foreground">
             ● 완료 · ─ 건너뜀 · ◌ 미기록(기대일인데 기록 없음) · · 예정 없음
           </p>
         </Card>
@@ -190,14 +190,14 @@ function RoutineEditor({ routine, onClose }: { routine: Routine | null; onClose:
       footer={
         <>
           {routine ? (
-            <Button variant="ghost" className="mr-auto text-danger" onClick={remove}>
+            <Button variant="ghost" className="mr-auto text-destructive" onClick={remove}>
               삭제
             </Button>
           ) : null}
           <Button variant="ghost" onClick={onClose}>
             닫기
           </Button>
-          <Button variant="primary" onClick={save} disabled={!title.trim()}>
+          <Button onClick={save} disabled={!title.trim()}>
             저장
           </Button>
         </>

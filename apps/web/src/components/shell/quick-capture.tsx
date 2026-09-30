@@ -2,12 +2,12 @@
 
 import { useRef, useState } from "react";
 import { ImagePlus, Link2, ListTodo, NotebookPen, Receipt } from "lucide-react";
-import clsx from "clsx";
-import { Sheet } from "@/components/ui/dialog";
+import { Sheet } from "@/components/app/dialog";
 import { Button } from "@/components/ui/button";
-import { TextArea } from "@/components/ui/fields";
+import { Segmented } from "@/components/app/segmented";
+import { TextArea } from "@/components/app/fields";
 import { useWorkspace } from "@/lib/workspace";
-import { useToast } from "@/components/ui/toast";
+import { useToast } from "@/components/app/toast";
 import { ApiRequestError, uploadCapture } from "@/lib/api-client";
 
 type Mode = "inbox" | "task" | "note";
@@ -125,7 +125,7 @@ export function QuickCapture({
           <Button variant="ghost" onClick={() => onOpenChange(false)}>
             취소
           </Button>
-          <Button variant="primary" onClick={submit} disabled={!trimmed || saving}>
+          <Button onClick={submit} disabled={!trimmed || saving}>
             {saving ? "저장 중…" : "저장"}
           </Button>
         </>
@@ -143,27 +143,17 @@ export function QuickCapture({
           }}
           rows={4}
         />
-        <div role="radiogroup" aria-label="저장 위치" className="flex gap-1.5">
-          {modes.map((m) => (
-            <button
-              key={m.id}
-              type="button"
-              role="radio"
-              aria-checked={mode === m.id}
-              onClick={() => setMode(m.id)}
-              className={clsx(
-                "flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[13px] font-semibold",
-                mode === m.id
-                  ? "border-accent bg-accent-soft text-accent-strong"
-                  : "border-line text-ink-muted hover:bg-canvas",
-              )}
-            >
-              <m.icon className="size-3.5" aria-hidden />
-              {m.label}
-            </button>
-          ))}
-        </div>
-        <div className="flex flex-wrap gap-2 border-t border-line pt-3">
+        <Segmented
+          label="저장 위치"
+          value={mode}
+          onChange={setMode}
+          options={modes.map((m) => ({
+            value: m.id,
+            label: m.label,
+            icon: <m.icon className="size-3.5" aria-hidden />,
+          }))}
+        />
+        <div className="flex flex-wrap gap-2 border-t border-border pt-3">
           <input
             ref={fileRef}
             type="file"
@@ -174,6 +164,7 @@ export function QuickCapture({
             onChange={(e) => void onFile(e.target.files?.[0])}
           />
           <Button
+            variant="outline"
             size="sm"
             onClick={() => {
               setFileKind("receipt");
@@ -184,6 +175,7 @@ export function QuickCapture({
             <Receipt className="size-4" aria-hidden /> 영수증 사진
           </Button>
           <Button
+            variant="outline"
             size="sm"
             onClick={() => {
               setFileKind("image");

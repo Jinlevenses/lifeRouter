@@ -4,10 +4,10 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { Link2, Plus } from "lucide-react";
-import clsx from "clsx";
-import { Badge, EmptyState, PageHeader } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
+import { Badge, EmptyState, PageHeader } from "@/components/app/card";
 import { Button } from "@/components/ui/button";
-import { TextInput } from "@/components/ui/fields";
+import { SearchInput } from "@/components/app/fields";
 import { useWorkspace } from "@/lib/workspace";
 import { relativeDay, seoulParts } from "@/lib/dates";
 
@@ -41,18 +41,17 @@ export default function NotesPage() {
         description="생각과 기록을 적고 다른 노트·프로젝트·목표·할 일과 연결하세요."
         action={
           <>
-            <Link href="/collections" className="text-sm font-semibold text-accent-strong hover:underline">
+            <Link href="/collections" className="text-sm font-semibold text-primary hover:underline">
               컬렉션
             </Link>
-            <Button variant="primary" onClick={create}>
+            <Button onClick={create}>
               <Plus className="size-4" aria-hidden /> 새 노트
             </Button>
           </>
         }
       />
       <div className="mb-4 space-y-2">
-        <TextInput
-          type="search"
+        <SearchInput
           aria-label="노트 검색"
           placeholder="제목·내용 검색"
           value={query}
@@ -66,11 +65,11 @@ export default function NotesPage() {
                 type="button"
                 aria-pressed={tag === t}
                 onClick={() => setTag(tag === t ? null : t)}
-                className={clsx(
+                className={cn(
                   "rounded-full px-2.5 py-1 text-[13px] font-semibold",
                   tag === t
-                    ? "bg-accent text-white"
-                    : "bg-surface text-ink-muted ring-1 ring-line hover:bg-canvas",
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-card text-muted-foreground ring-1 ring-border hover:bg-muted",
                 )}
               >
                 #{t} <span className="font-normal opacity-70">{count}</span>
@@ -82,24 +81,23 @@ export default function NotesPage() {
       {notes.length === 0 ? (
         <EmptyState
           title={ws.notes.length ? "검색 결과가 없습니다." : "아직 노트가 없습니다."}
-          action={
-            !ws.notes.length ? (
-              <Button variant="primary" onClick={create}>
-                첫 노트 쓰기
-              </Button>
-            ) : undefined
-          }
+          action={!ws.notes.length ? <Button onClick={create}>첫 노트 쓰기</Button> : undefined}
         />
       ) : (
-        <ul className="grid gap-3 sm:grid-cols-2">
+        <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {notes.map((n) => {
             const updated = seoulParts(n.updatedAt);
             return (
               <li key={n.id}>
-                <Link href={`/notes/${n.id}`} className="card block h-full p-4 hover:border-line-strong">
+                <Link
+                  href={`/notes/${n.id}`}
+                  className="block h-full rounded-xl border bg-card p-4 shadow-xs transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md"
+                >
                   <p className="truncate text-[15px] font-bold">{n.title || "제목 없음"}</p>
-                  <p className="mt-1 line-clamp-2 text-[13px] text-ink-muted">{n.excerpt || "내용 없음"}</p>
-                  <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[12px] text-ink-subtle">
+                  <p className="mt-1 line-clamp-2 text-[13px] text-muted-foreground">
+                    {n.excerpt || "내용 없음"}
+                  </p>
+                  <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[12px] text-muted-foreground">
                     <span>
                       {relativeDay(updated.date, ws.today)} {updated.time}
                     </span>

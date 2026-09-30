@@ -25,9 +25,16 @@ export const disconnectedCalendar: CalendarProvider = {
 };
 
 /** Toss: interface only until the owner confirms the official read-only API and credentials (review Q-2). */
-export const disconnectedBalance: BalanceProvider = {
+export const disconnectedTossBank: BalanceProvider = {
+  product: "toss_bank",
   available: false,
-  fetchBalances: disconnected("Toss"),
+  fetchBalances: disconnected("토스뱅크"),
+};
+
+export const disconnectedTossSecurities: BalanceProvider = {
+  product: "toss_securities",
+  available: false,
+  fetchBalances: disconnected("토스증권"),
 };
 
 export const unavailableOcr: OcrEngine = {

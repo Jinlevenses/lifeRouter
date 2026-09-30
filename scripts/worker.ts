@@ -53,7 +53,8 @@ await work(JOB_NAMES.googleApplyProposal, (d) =>
 await work(JOB_NAMES.aiAnalysis, (d) => workerJobs.runAnalysis(db, integrations, String(d.analysisId)));
 await work(JOB_NAMES.receiptOcr, (d) => workerJobs.runOcr(db, integrations, String(d.receiptId)));
 await work(JOB_NAMES.tossSync, async () => {
-  if (!integrations.balance.available) log.info("toss.skipped", { reason: "disconnected" });
+  for (const b of Object.values(integrations.balance))
+    if (!b.available) log.info("toss.skipped", { product: b.product, reason: "disconnected" });
 });
 await work(JOB_NAMES.idempotencyPrune, () => workerJobs.pruneIdempotency(db));
 await work(JOB_NAMES.backupDaily, async () => {
@@ -103,7 +104,8 @@ await tick();
 const timer = setInterval(tick, 60_000);
 log.info("worker.started", {
   google: integrations.calendar.available,
-  ai: integrations.ai.available,
+  openai: integrations.ai.openai.available,
+  anthropic: integrations.ai.anthropic.available,
   backup: !!process.env.LIFEROUTE_BACKUP_KEY,
 });
 

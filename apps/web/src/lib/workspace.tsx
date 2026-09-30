@@ -3,7 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import type { CommandResultMap, WorkspaceData } from "@liferoute/contracts";
 import { ApiRequestError, fetchWorkspace, postCommand, type CommandRequestBody } from "./api-client";
-import { useToast } from "@/components/ui/toast";
+import { useToast } from "@/components/app/toast";
 
 interface WorkspaceContextValue {
   ws: WorkspaceData;

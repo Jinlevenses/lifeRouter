@@ -1,7 +1,7 @@
 import { randomBytes } from "node:crypto";
 import { eq } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { connections } from "../src/db/schema";
+import { aiUsage, connections } from "../src/db/schema";
 import {
   disconnectedIntegrations,
   IntegrationError,
@@ -285,11 +285,14 @@ describe("INT-AI-001 consented analysis and usage ledger (FR-009, docs/15_ai)", 
     h.integrations = {
       ...disconnectedIntegrations(),
       ai: {
-        name: "anthropic",
-        available: true,
-        analyze: async (input) => {
-          sent.push(...input.documents.map((d) => d.title));
-          return { text: "요약 결과", model: input.model, inputTokens: 1200, outputTokens: 300 };
+        ...disconnectedIntegrations().ai,
+        openai: {
+          name: "openai",
+          available: true,
+          analyze: async (input) => {
+            sent.push(...input.documents.map((d) => d.title));
+            return { text: "요약 결과", model: input.model, inputTokens: 1200, outputTokens: 300 };
+          },
         },
       },
     };
@@ -299,15 +302,15 @@ describe("INT-AI-001 consented analysis and usage ledger (FR-009, docs/15_ai)", 
         expectedVersion: (await loadWorkspace(h.db, h.now)).settings.version,
         patch: {
           ai: {
-            provider: "anthropic",
-            model: "claude-opus-5",
+            provider: "openai",
+            model: "gpt-5.4-mini",
             inputKrwPer1MTokens: "7000",
             outputKrwPer1MTokens: "35000",
           },
         },
       },
     });
-    expect(settings.ai.provider).toBe("anthropic");
+    expect(settings.ai.provider).toBe("openai");
     const { note: chosen } = await h.ok({ type: "note.create", payload: { title: "선택한 노트" } });
     await h.ok({ type: "note.create", payload: { title: "보내면 안 되는 노트" } });
 
@@ -344,7 +347,9 @@ describe("INT-AI-001 consented analysis and usage ledger (FR-009, docs/15_ai)", 
     expect(sent).toEqual(["선택한 노트"]);
     const ws = await loadWorkspace(h.db, h.now);
     const done = ws.analyses.find((a) => a.id === analysis.id)!;
-    expect(done).toMatchObject({ status: "completed", resultText: "요약 결과" });
+    expect(done).toMatchObject({ status: "completed", resultText: "요약 결과", provider: "openai" });
+    const [usage] = await h.db.select().from(aiUsage);
+    expect(usage).toMatchObject({ provider: "openai", model: "gpt-5.4-mini", inputTokens: 1200 });
     // 1200 × 7000 + 300 × 35000 = 18.9 → 19 KRW (rounded up); reservation released.
     expect(ws.aiBudget).toMatchObject({ usedKrw: "19", reservedKrw: "0", remainingKrw: "2981" });
   });

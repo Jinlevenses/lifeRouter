@@ -1,9 +1,9 @@
 "use client";
 
-import clsx from "clsx";
+import { cn } from "@/lib/utils";
 import type { Recurrence, Weekday } from "@liferoute/contracts";
 import { WEEKDAYS, describeRecurrence } from "@liferoute/core";
-import { Field, Select, TextInput } from "@/components/ui/fields";
+import { Field, Select, TextInput } from "@/components/app/fields";
 
 const KO: Record<Weekday, string> = {
   mon: "월",
@@ -50,7 +50,7 @@ export function RecurrenceEditor({
       </Field>
       {value?.kind === "weekly" ? (
         <fieldset>
-          <legend className="label">요일</legend>
+          <legend className="mb-1.5 block text-[13px] font-semibold text-muted-foreground">요일</legend>
           <div className="flex flex-wrap gap-1.5">
             {WEEKDAYS.map((d) => {
               const on = value.weekdays.includes(d);
@@ -63,11 +63,11 @@ export function RecurrenceEditor({
                     const next = on ? value.weekdays.filter((x) => x !== d) : [...value.weekdays, d];
                     if (next.length > 0) onChange({ ...value, weekdays: next });
                   }}
-                  className={clsx(
+                  className={cn(
                     "size-9 rounded-full border text-sm font-semibold",
                     on
-                      ? "border-accent bg-accent text-white"
-                      : "border-line-strong text-ink-muted hover:bg-canvas",
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : "border-input text-muted-foreground hover:bg-muted",
                   )}
                 >
                   {KO[d]}
@@ -122,7 +122,7 @@ export function RecurrenceEditor({
               />
             )}
           </Field>
-          <p className="col-span-2 text-[12px] text-ink-muted">{describeRecurrence(value)}</p>
+          <p className="col-span-2 text-[12px] text-muted-foreground">{describeRecurrence(value)}</p>
         </div>
       ) : null}
     </div>

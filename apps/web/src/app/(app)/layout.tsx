@@ -4,7 +4,7 @@ import { getOwnerSession } from "@liferoute/server/auth";
 import { getDb } from "@liferoute/server/db";
 import { loadWorkspace } from "@liferoute/server";
 import { AppShell } from "@/components/shell/app-shell";
-import { ToastProvider } from "@/components/ui/toast";
+import { ToastProvider } from "@/components/app/toast";
 import { WorkspaceProvider } from "@/lib/workspace";
 
 export const dynamic = "force-dynamic";

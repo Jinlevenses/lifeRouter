@@ -26,8 +26,9 @@ export interface AiAnalyzeResult {
   inputTokens: number;
   outputTokens: number;
 }
+export type AiProviderName = "openai" | "anthropic";
 export interface AiProvider {
-  readonly name: "disconnected" | "anthropic";
+  readonly name: "disconnected" | AiProviderName;
   readonly available: boolean;
   analyze(input: AiAnalyzeInput): Promise<AiAnalyzeResult>;
 }
@@ -79,7 +80,9 @@ export interface CalendarProvider {
   deleteEvent(tokens: GoogleTokens, calendarId: string, eventId: string, etag: string | null): Promise<void>;
 }
 
+/** Q-2: one adapter per Toss product (토스뱅크 잔액, 토스증권 잔고); read-only. */
 export interface BalanceProvider {
+  readonly product: "toss_bank" | "toss_securities";
   readonly available: boolean;
   fetchBalances(): Promise<{ externalAccountId: string; amount: string; currency: string; asOf: string }[]>;
 }
@@ -87,9 +90,10 @@ export interface BalanceProvider {
 export interface Integrations {
   /** Google OAuth client configured (connecting is possible). Connection status says whether it is connected. */
   calendar: CalendarProvider;
-  balance: BalanceProvider;
+  balance: { toss_bank: BalanceProvider; toss_securities: BalanceProvider };
   ocr: OcrEngine;
-  ai: AiProvider;
+  /** One adapter per provider; the owner's Settings choose which one an analysis uses. */
+  ai: Record<AiProviderName, AiProvider>;
 }
 
 export class IntegrationError extends Error {

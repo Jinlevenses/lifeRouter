@@ -2,9 +2,9 @@
 
 import { useState } from "react";
 import type { Recurrence, Task } from "@liferoute/contracts";
-import { Sheet } from "@/components/ui/dialog";
+import { Sheet } from "@/components/app/dialog";
 import { Button } from "@/components/ui/button";
-import { Field, Select, TextArea, TextInput } from "@/components/ui/fields";
+import { Field, Select, TextArea, TextInput } from "@/components/app/fields";
 import { useWorkspace } from "@/lib/workspace";
 import { seoulInstant, seoulParts } from "@/lib/dates";
 import { RecurrenceEditor } from "./recurrence-editor";
@@ -86,7 +86,12 @@ export function TaskEditor({
                   취소 처리
                 </Button>
               ) : null}
-              <Button variant="ghost" size="sm" className="text-danger" onClick={() => act("task.delete")}>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-destructive"
+                onClick={() => act("task.delete")}
+              >
                 삭제
               </Button>
             </div>
@@ -94,7 +99,7 @@ export function TaskEditor({
           <Button variant="ghost" onClick={() => onOpenChange(false)}>
             닫기
           </Button>
-          <Button variant="primary" onClick={save} disabled={!title.trim() || needsDue || saving}>
+          <Button onClick={save} disabled={!title.trim() || needsDue || saving}>
             {saving ? "저장 중…" : "저장"}
           </Button>
         </>
@@ -145,8 +150,10 @@ export function TaskEditor({
             />
           )}
         </Field>
-        <fieldset className="rounded-xl border border-line p-3">
-          <legend className="px-1 text-[13px] font-semibold text-ink-muted">캘린더에 배치 (선택)</legend>
+        <fieldset className="rounded-xl border border-border p-3">
+          <legend className="px-1 text-[13px] font-semibold text-muted-foreground">
+            캘린더에 배치 (선택)
+          </legend>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             <Field label="날짜">
               {(id) => (
@@ -222,7 +229,7 @@ export function TaskEditor({
         </div>
         <RecurrenceEditor value={recurrence} onChange={setRecurrence} defaultStart={dueDate || ws.today} />
         {recurrence ? (
-          <p className="text-[12px] text-ink-muted">
+          <p className="text-[12px] text-muted-foreground">
             완료하면 다음 마감일로 새 할 일이 생깁니다. 밀린 반복은 쌓이지 않습니다.
           </p>
         ) : null}

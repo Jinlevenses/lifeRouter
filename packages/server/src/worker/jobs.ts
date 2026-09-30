@@ -32,14 +32,17 @@ export async function runAnalysis(
   const [settingsRow] = await db.select().from(settings).where(eq(settings.id, "settings"));
   const ai = toSettings(settingsRow!).ai;
   try {
-    if (!integrations.ai.available) throw new Error("AI provider is not configured");
+    const provider = analysis.provider === "disconnected" ? null : integrations.ai[analysis.provider];
+    if (!provider?.available) throw new Error("AI provider is not configured");
     // Only the consented notes are sent (docs/15_ai).
     const noteRows = await db
       .select({ title: notes.title, text: notes.text })
       .from(notes)
       .where(and(inArray(notes.id, analysis.noteIds), isNull(notes.deletedAt)));
-    const result = await integrations.ai.analyze({
-      model: analysis.model ?? ai.model ?? "claude-opus-5",
+    const model = analysis.model ?? ai.model;
+    if (!model) throw new Error("AI model is not set");
+    const result = await provider.analyze({
+      model,
       purpose: analysis.purpose,
       documents: noteRows,
       maxOutputTokens: analysis.estimate?.outputTokens ?? ai.maxOutputTokens,
@@ -50,7 +53,7 @@ export async function runAnalysis(
         id: usageId,
         analysisId: analysis.id,
         monthKey: analysis.estimate?.monthKey ?? monthKey(todayInZone("Asia/Seoul", now)),
-        provider: "anthropic",
+        provider: provider.name === "disconnected" ? analysis.provider : provider.name,
         model: result.model,
         inputTokens: result.inputTokens,
         outputTokens: result.outputTokens,

@@ -16,7 +16,9 @@
 | 다음 후보 (backlog) | 이유 |
 |---|---|
 | 로컬 OCR 어댑터(tesseract.js kor+eng) | 영수증 입력 수고 줄이기, 정확도는 수동 확인 |
-| Toss 실제 어댑터 | 공식 API·계약 확인 후(Q-2) |
+| 토스증권 잔고 어댑터 | 공식 Open API 문서·client_id/secret·허용 IP 확인 후(ADR-014) |
+| 토스뱅크 잔액 | 개인용 공식 API가 확인되면 |
+| Notion 데이터베이스 일정 읽기 | Notion Calendar의 Google 연동 밖 일정이 필요할 때(ADR-015) |
 | Google 읽을 캘린더 선택 UI | 현재는 목록 전체를 읽음 |
 | PWA 설치·오프라인 캐시 | iPhone 홈 화면 사용성 |
 | 노트 전문 검색(PostgreSQL FTS) | 노트가 많아질 때 |

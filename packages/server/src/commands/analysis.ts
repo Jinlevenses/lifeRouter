@@ -71,7 +71,9 @@ async function estimateFor(
   excludeAnalysisId?: string,
 ): Promise<CostEstimate> {
   const ai = ctx.settings.ai;
-  if (ai.provider === "disconnected" || !ctx.integrations.ai.available) throw notConfigured();
+  if (ai.provider === "disconnected" || !ai.model || !ctx.integrations.ai[ai.provider].available) {
+    throw notConfigured();
+  }
   const status = await currentBudget(ctx.tx, ctx.settings, ctx.today, excludeAnalysisId);
   const estimate = buildEstimate(ai, await noteChars(ctx, noteIds), status, ctx.now.toISOString());
   if (!estimate) throw notConfigured();

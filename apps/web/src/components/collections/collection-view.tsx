@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Plus, Settings2, Trash2 } from "lucide-react";
-import clsx from "clsx";
+import { cn } from "@/lib/utils";
 import type {
   Collection,
   CollectionProperty,
@@ -21,10 +21,10 @@ import {
   isEmptyValue,
   isMoney,
 } from "@liferoute/core";
-import { Badge, Card, EmptyState } from "@/components/ui/card";
+import { Badge, Card, EmptyState } from "@/components/app/card";
 import { Button } from "@/components/ui/button";
-import { Sheet } from "@/components/ui/dialog";
-import { Checkbox, Field, MoneyInput, Select, TextInput } from "@/components/ui/fields";
+import { Sheet } from "@/components/app/dialog";
+import { Checkbox, Field, MoneyInput, Select, TextInput } from "@/components/app/fields";
 import { useWorkspace } from "@/lib/workspace";
 
 const TYPE_LABEL: Record<PropertyType, string> = {
@@ -114,7 +114,7 @@ export function CollectionDetail({ collectionId }: { collectionId: string }) {
       <EmptyState
         title="컬렉션을 찾을 수 없습니다."
         action={
-          <Link href="/collections" className="text-sm font-semibold text-accent-strong underline">
+          <Link href="/collections" className="text-sm font-semibold text-primary underline">
             목록으로
           </Link>
         }
@@ -150,14 +150,17 @@ export function CollectionDetail({ collectionId }: { collectionId: string }) {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-2">
-        <Link href="/collections" className="text-sm font-semibold text-ink-muted hover:text-ink">
+        <Link
+          href="/collections"
+          className="text-sm font-semibold text-muted-foreground hover:text-foreground"
+        >
           ← 컬렉션
         </Link>
         <h1 className="mr-auto text-[22px] font-bold">{collection.name}</h1>
-        <Button size="sm" onClick={() => setSchemaOpen(true)}>
+        <Button variant="outline" size="sm" onClick={() => setSchemaOpen(true)}>
           <Settings2 className="size-4" aria-hidden /> 속성·보기
         </Button>
-        <Button size="sm" variant="primary" onClick={() => setEditing(null)}>
+        <Button size="sm" onClick={() => setEditing(null)}>
           <Plus className="size-4" aria-hidden /> 항목
         </Button>
       </div>
@@ -169,9 +172,9 @@ export function CollectionDetail({ collectionId }: { collectionId: string }) {
             type="button"
             aria-selected={v.id === view.id}
             onClick={() => setViewId(v.id)}
-            className={clsx(
+            className={cn(
               "rounded-lg px-3 py-1.5 text-sm font-semibold",
-              v.id === view.id ? "bg-accent-soft text-accent-strong" : "text-ink-muted hover:bg-surface",
+              v.id === view.id ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-card",
             )}
           >
             {v.name}
@@ -183,7 +186,7 @@ export function CollectionDetail({ collectionId }: { collectionId: string }) {
         <EmptyState
           title="항목이 없습니다."
           action={
-            <Button size="sm" variant="primary" onClick={() => setEditing(null)}>
+            <Button size="sm" onClick={() => setEditing(null)}>
               항목 추가
             </Button>
           }
@@ -192,7 +195,7 @@ export function CollectionDetail({ collectionId }: { collectionId: string }) {
         <Card className="overflow-x-auto !p-0">
           <table className="w-full min-w-[480px] text-sm">
             <thead>
-              <tr className="border-b border-line bg-canvas/60 text-left text-[12px] text-ink-muted">
+              <tr className="border-b border-border bg-muted/60 text-left text-[12px] text-muted-foreground">
                 {visible.map((p) => (
                   <th key={p.id} scope="col" className="px-3 py-2 font-semibold">
                     {p.name}
@@ -204,13 +207,13 @@ export function CollectionDetail({ collectionId }: { collectionId: string }) {
               {records.map((r) => (
                 <tr
                   key={r.id}
-                  className="cursor-pointer border-b border-line last:border-0 hover:bg-canvas"
+                  className="cursor-pointer border-b border-border last:border-0 hover:bg-muted"
                   onClick={() => setEditing(r)}
                 >
                   {visible.map((p, i) => (
                     <td
                       key={p.id}
-                      className={clsx("px-3 py-2.5", p.type === "money" || p.type === "number" ? "num" : "")}
+                      className={cn("px-3 py-2.5", p.type === "money" || p.type === "number" ? "num" : "")}
                     >
                       {i === 0 ? (
                         <button type="button" className="text-left font-medium" onClick={() => setEditing(r)}>
@@ -283,9 +286,9 @@ function BoardView({
           <section
             key={col.id || "none"}
             aria-label={col.label}
-            className="w-64 shrink-0 rounded-xl bg-surface/70 p-2 ring-1 ring-line"
+            className="w-64 shrink-0 rounded-xl bg-card/70 p-2 ring-1 ring-border"
           >
-            <h3 className="mb-2 flex items-center justify-between px-1 text-[13px] font-semibold text-ink-muted">
+            <h3 className="mb-2 flex items-center justify-between px-1 text-[13px] font-semibold text-muted-foreground">
               {col.label} <Badge>{items.length}</Badge>
             </h3>
             <ul className="space-y-2">
@@ -294,14 +297,14 @@ function BoardView({
                   <button
                     type="button"
                     onClick={() => onOpen(r)}
-                    className="card block w-full p-3 text-left text-sm hover:border-line-strong"
+                    className="block w-full rounded-xl border bg-card p-3 text-left text-sm shadow-xs hover:border-primary/40"
                   >
                     <span className="font-medium">
                       {titleProp ? label(titleProp, r.values[titleProp.id], recordsByCollection) || "—" : "—"}
                     </span>
                     {props.slice(1, 3).map((p) =>
                       p.id !== group.id && r.values[p.id] ? (
-                        <span key={p.id} className="mt-0.5 block text-[12px] text-ink-muted">
+                        <span key={p.id} className="mt-0.5 block text-[12px] text-muted-foreground">
                           {p.name}: {label(p, r.values[p.id], recordsByCollection)}
                         </span>
                       ) : null,
@@ -352,9 +355,9 @@ function AgendaView({
                 <button
                   type="button"
                   onClick={() => onOpen(r)}
-                  className="flex w-full gap-3 rounded-lg px-2 py-1.5 text-left text-sm hover:bg-canvas"
+                  className="flex w-full gap-3 rounded-lg px-2 py-1.5 text-left text-sm hover:bg-muted"
                 >
-                  <span className="num w-24 shrink-0 text-ink-muted">{formatDateKo(d!)}</span>
+                  <span className="num w-24 shrink-0 text-muted-foreground">{formatDateKo(d!)}</span>
                   <span className="truncate">{titleOf(r)}</span>
                 </button>
               </li>
@@ -363,7 +366,7 @@ function AgendaView({
         </Card>
       ))}
       {records.length > dated.length ? (
-        <p className="text-[12px] text-ink-muted">
+        <p className="text-[12px] text-muted-foreground">
           날짜가 없는 항목 {records.length - dated.length}개는 표 보기에서 확인하세요.
         </p>
       ) : null}
@@ -438,14 +441,14 @@ function RecordEditor({
       footer={
         <>
           {record ? (
-            <Button variant="ghost" className="mr-auto text-danger" onClick={remove}>
+            <Button variant="ghost" className="mr-auto text-destructive" onClick={remove}>
               <Trash2 className="size-4" aria-hidden /> 삭제
             </Button>
           ) : null}
           <Button variant="ghost" onClick={onClose}>
             닫기
           </Button>
-          <Button variant="primary" onClick={save} disabled={missing.length > 0 || invalidMoney}>
+          <Button onClick={save} disabled={missing.length > 0 || invalidMoney}>
             저장
           </Button>
         </>
@@ -578,7 +581,9 @@ function RecordEditor({
               const selected = v?.type === "multiSelect" ? v.value : [];
               return (
                 <fieldset key={p.id}>
-                  <legend className="label">{name}</legend>
+                  <legend className="mb-1.5 block text-[13px] font-semibold text-muted-foreground">
+                    {name}
+                  </legend>
                   <div className="flex flex-wrap gap-1.5">
                     {p.options.map((o) => {
                       const on = selected.includes(o.id);
@@ -593,9 +598,9 @@ function RecordEditor({
                               value: on ? selected.filter((x) => x !== o.id) : [...selected, o.id],
                             })
                           }
-                          className={clsx(
+                          className={cn(
                             "rounded-full px-2.5 py-1 text-[13px] font-semibold",
-                            on ? "bg-accent text-white" : "bg-canvas text-ink-muted",
+                            on ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground",
                           )}
                         >
                           {o.label}
@@ -637,7 +642,7 @@ function RecordEditor({
           }
         })}
         {missing.length ? (
-          <p className="text-[12px] text-danger">필수: {missing.map((p) => p.name).join(", ")}</p>
+          <p className="text-[12px] text-destructive">필수: {missing.map((p) => p.name).join(", ")}</p>
         ) : null}
       </div>
     </Sheet>
@@ -760,15 +765,13 @@ function SchemaEditor({
       wide
       footer={
         <>
-          <Button variant="ghost" className="mr-auto text-danger" onClick={onDelete}>
+          <Button variant="ghost" className="mr-auto text-destructive" onClick={onDelete}>
             컬렉션 삭제
           </Button>
           <Button variant="ghost" onClick={onClose}>
             닫기
           </Button>
-          <Button variant="primary" onClick={save}>
-            저장
-          </Button>
+          <Button onClick={save}>저장</Button>
         </>
       }
     >
@@ -779,25 +782,25 @@ function SchemaEditor({
           )}
         </Field>
         <section>
-          <h3 className="label">속성</h3>
-          <ul className="divide-y divide-line rounded-xl border border-line">
+          <h3 className="mb-1.5 block text-[13px] font-semibold text-muted-foreground">속성</h3>
+          <ul className="divide-y divide-border rounded-xl border border-border">
             {props.map((p, i) => (
               <li key={p.id} className="flex items-center gap-2 px-3 py-2 text-sm">
                 <span className="min-w-0 flex-1 truncate font-medium">{p.name}</span>
                 <Badge>{TYPE_LABEL[p.type]}</Badge>
                 {p.options.length ? (
-                  <span className="hidden truncate text-[12px] text-ink-muted sm:inline">
+                  <span className="hidden truncate text-[12px] text-muted-foreground sm:inline">
                     {p.options.map((o) => o.label).join(", ")}
                   </span>
                 ) : null}
-                <label className="flex items-center gap-1 text-[12px] text-ink-muted">
+                <label className="flex items-center gap-1 text-[12px] text-muted-foreground">
                   <input
                     type="checkbox"
                     checked={p.required}
                     onChange={(e) =>
                       setProps(props.map((q) => (q.id === p.id ? { ...q, required: e.target.checked } : q)))
                     }
-                    className="accent-[var(--color-accent)]"
+                    className="accent-[var(--primary)]"
                   />
                   필수
                 </label>
@@ -813,7 +816,7 @@ function SchemaEditor({
               </li>
             ))}
           </ul>
-          <div className="mt-3 grid gap-2 rounded-xl bg-canvas p-3 sm:grid-cols-[1fr_140px]">
+          <div className="mt-3 grid gap-2 rounded-xl bg-muted p-3 sm:grid-cols-[1fr_140px]">
             <TextInput
               aria-label="새 속성 이름"
               placeholder="새 속성 이름"
@@ -856,19 +859,21 @@ function SchemaEditor({
                 ))}
               </Select>
             ) : null}
-            <Button onClick={addProp} disabled={invalidNew} className="sm:col-span-2 sm:justify-self-end">
+            <Button
+              variant="outline"
+              onClick={addProp}
+              disabled={invalidNew}
+              className="sm:col-span-2 sm:justify-self-end"
+            >
               <Plus className="size-4" aria-hidden /> 속성 추가
             </Button>
           </div>
         </section>
         <section>
-          <h3 className="label">보기</h3>
+          <h3 className="mb-1.5 block text-[13px] font-semibold text-muted-foreground">보기</h3>
           <ul className="flex flex-wrap gap-2">
             {views.map((v) => (
-              <li
-                key={v.id}
-                className="flex items-center gap-1 rounded-full bg-canvas py-1 pl-3 pr-1 text-sm"
-              >
+              <li key={v.id} className="flex items-center gap-1 rounded-full bg-muted py-1 pl-3 pr-1 text-sm">
                 {v.name}
                 <Button
                   size="icon"
@@ -884,10 +889,11 @@ function SchemaEditor({
             ))}
           </ul>
           <div className="mt-2 flex flex-wrap gap-2">
-            <Button size="sm" onClick={() => addView("table")}>
+            <Button variant="outline" size="sm" onClick={() => addView("table")}>
               표 추가
             </Button>
             <Button
+              variant="outline"
               size="sm"
               onClick={() => addView("board")}
               disabled={!canBoard}
@@ -896,6 +902,7 @@ function SchemaEditor({
               보드 추가
             </Button>
             <Button
+              variant="outline"
               size="sm"
               onClick={() => addView("calendar")}
               disabled={!canCalendar}

@@ -2,15 +2,26 @@
 
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { Copy, Download, ExternalLink, KeyRound, Plug, Trash2 } from "lucide-react";
-import type { Connection, GuidanceSource, Settings } from "@liferoute/contracts";
+import {
+  CalendarDays,
+  ChartCandlestick,
+  Copy,
+  Download,
+  ExternalLink,
+  KeyRound,
+  Landmark,
+  NotebookTabs,
+  Plug,
+  Trash2,
+} from "lucide-react";
+import type { Connection, ConnectionStatus, GuidanceSource, Settings } from "@liferoute/contracts";
 import { GUIDANCE_ALLOWED_HOSTS } from "@liferoute/contracts";
 import { addMonths, formatKrw, isMoney } from "@liferoute/core";
-import { Badge, Card, CardHeader, EmptyState, PageHeader } from "@/components/ui/card";
+import { Badge, Card, CardHeader, EmptyState, PageHeader } from "@/components/app/card";
 import { Button } from "@/components/ui/button";
-import { Sheet } from "@/components/ui/dialog";
-import { Checkbox, Field, MoneyInput, Select, TextArea, TextInput } from "@/components/ui/fields";
-import { useToast } from "@/components/ui/toast";
+import { Sheet } from "@/components/app/dialog";
+import { Checkbox, Field, MoneyInput, Select, TextArea, TextInput } from "@/components/app/fields";
+import { useToast } from "@/components/app/toast";
 import { useWorkspace } from "@/lib/workspace";
 import type { CommandRequestBody } from "@/lib/api-client";
 import { instantLabel } from "@/lib/dates";
@@ -133,7 +144,6 @@ function GoalSettings() {
         </Field>
         <div className="flex justify-end">
           <Button
-            variant="primary"
             disabled={!amountOk || !isMoney(amount) || !start || !target || target <= start}
             onClick={() =>
               save({
@@ -187,25 +197,25 @@ function CaptureTokens() {
             <TextInput id={id} value={label} onChange={(e) => setLabel(e.target.value)} maxLength={100} />
           )}
         </Field>
-        <Button type="submit">
+        <Button variant="outline" type="submit">
           <KeyRound className="size-4" aria-hidden /> 발급
         </Button>
       </form>
       {active.length ? (
-        <ul className="mt-3 divide-y divide-line">
+        <ul className="mt-3 divide-y divide-border">
           {active.map((t) => (
             <li key={t.id} className="flex items-center justify-between gap-2 py-2 text-sm">
               <span>
                 <span className="font-semibold">{t.label}</span>{" "}
-                <code className="font-mono text-[12px] text-ink-muted">{t.prefix}…</code>
-                <span className="block text-[12px] text-ink-muted">
+                <code className="font-mono text-[12px] text-muted-foreground">{t.prefix}…</code>
+                <span className="block text-[12px] text-muted-foreground">
                   {t.lastUsedAt ? `마지막 사용 ${instantLabel(t.lastUsedAt, ws.today)}` : "아직 사용 안 함"}
                 </span>
               </span>
               <Button
                 size="sm"
                 variant="ghost"
-                className="text-danger"
+                className="text-destructive"
                 onClick={() =>
                   window.confirm(`${t.label} 토큰을 폐기할까요?`) &&
                   run({ type: "token.revoke", payload: { tokenId: t.id } })
@@ -225,9 +235,10 @@ function CaptureTokens() {
         wide
       >
         <div className="space-y-4 text-sm">
-          <div className="flex items-center gap-2 rounded-lg bg-canvas p-3">
+          <div className="flex items-center gap-2 rounded-lg bg-muted p-3">
             <code className="min-w-0 flex-1 break-all font-mono text-[13px]">{secret}</code>
             <Button
+              variant="outline"
               size="sm"
               onClick={async () => {
                 await navigator.clipboard.writeText(secret ?? "");
@@ -253,7 +264,7 @@ function CaptureTokens() {
             </li>
             <li>설정에서 ‘공유 시트에서 보기’를 켜면 사진·링크를 바로 보낼 수 있습니다.</li>
           </ol>
-          <p className="text-[12px] text-ink-muted">
+          <p className="text-[12px] text-muted-foreground">
             토큰은 이 서비스 안에서만 쓰이며, 잃어버렸다면 폐기하고 새로 발급하세요. 실제 iPhone 동작은 직접
             확인이 필요합니다.
           </p>
@@ -274,7 +285,8 @@ const STATUS_LABEL: Record<Connection["status"], string> = {
 function Connections() {
   const { ws, run } = useWorkspace();
   const google = ws.connections.find((c) => c.provider === "google");
-  const toss = ws.connections.find((c) => c.provider === "toss");
+  const tossBank = ws.connections.find((c) => c.provider === "toss_bank");
+  const tossSecurities = ws.connections.find((c) => c.provider === "toss_securities");
   return (
     <Card id="connections">
       <CardHeader
@@ -282,35 +294,23 @@ function Connections() {
         description="외부 계정은 필요할 때만 연결합니다. 비밀 값은 서버 밖으로 나오지 않습니다."
       />
       <ul className="space-y-3 text-sm">
-        <li className="rounded-xl border border-line p-3">
-          <div className="flex items-center justify-between gap-2">
-            <p className="font-semibold">Google 캘린더</p>
-            <Badge
-              tone={
-                google?.status === "connected"
-                  ? "accent"
-                  : google?.status === "disconnected"
-                    ? "neutral"
-                    : "warn"
-              }
-            >
-              {STATUS_LABEL[google?.status ?? "disconnected"]}
-            </Badge>
-          </div>
-          <p className="mt-1 text-[12px] text-ink-muted">
-            모든 캘린더를 읽고, 승인한 일정만 별도의 ‘LifeRoute’ 캘린더에 씁니다. Notion Calendar 일정은
-            Google에 연결되어 있다면 함께 읽힙니다.
-          </p>
-          {google?.lastError ? <p className="mt-1 text-[12px] text-danger">{google.lastError}</p> : null}
+        <ConnectionItem
+          icon={<CalendarDays aria-hidden />}
+          title="Google 캘린더"
+          status={google?.status ?? "disconnected"}
+          description="모든 캘린더를 읽고, 승인한 일정만 별도의 ‘LifeRoute’ 캘린더에 씁니다."
+        >
+          {google?.lastError ? <p className="text-[12px] text-destructive">{google.lastError}</p> : null}
           {google?.lastSuccessAt ? (
-            <p className="mt-1 text-[12px] text-ink-muted">
+            <p className="text-[12px] text-muted-foreground">
               마지막 동기화 {instantLabel(google.lastSuccessAt, ws.today)}
             </p>
           ) : null}
-          <div className="mt-2 flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2">
             {google?.status === "connected" ? (
               <>
                 <Button
+                  variant="outline"
                   size="sm"
                   onClick={() =>
                     run(
@@ -324,7 +324,7 @@ function Connections() {
                 <Button
                   size="sm"
                   variant="ghost"
-                  className="text-danger"
+                  className="text-destructive"
                   onClick={() =>
                     window.confirm("Google 연결을 해제할까요?") &&
                     run({ type: "connection.disconnect", payload: { provider: "google" } })
@@ -334,37 +334,90 @@ function Connections() {
                 </Button>
               </>
             ) : (
-              <a
-                href="/api/v1/auth/google"
-                className="inline-flex h-8 items-center gap-1.5 rounded-[10px] bg-accent px-2.5 text-[13px] font-semibold text-white hover:bg-accent-strong"
-              >
-                <Plug className="size-4" aria-hidden /> Google 연결
-              </a>
+              <Button asChild size="sm">
+                <a href="/api/v1/auth/google">
+                  <Plug aria-hidden /> Google 연결
+                </a>
+              </Button>
             )}
           </div>
-        </li>
-        <li className="rounded-xl border border-line p-3">
-          <div className="flex items-center justify-between gap-2">
-            <p className="font-semibold">Toss 잔액 (읽기 전용)</p>
-            <Badge>{STATUS_LABEL[toss?.status ?? "disconnected"]}</Badge>
-          </div>
-          <p className="mt-1 text-[12px] text-ink-muted">
-            공식 읽기 전용 API와 계약 키·허용 IP가 확인되기 전까지는 잔액을 직접 기록합니다. 실패해도 기존
-            잔액을 덮어쓰지 않습니다.
+        </ConnectionItem>
+        <ConnectionItem
+          icon={<NotebookTabs aria-hidden />}
+          title="Notion Calendar"
+          status={google?.status === "connected" ? "connected" : "disconnected"}
+          statusLabel={google?.status === "connected" ? "Google로 연동" : "Google 연결 필요"}
+          description="Notion Calendar는 공개 API가 없어 Google 캘린더를 함께 쓰는 방식으로 연동합니다."
+        >
+          <ol className="list-decimal space-y-0.5 pl-4 text-[12px] text-muted-foreground">
+            <li>위에서 Google 캘린더를 연결합니다.</li>
+            <li>Notion Calendar에 같은 Google 계정을 추가하고 ‘LifeRoute’ 캘린더를 켭니다.</li>
+            <li>
+              승인한 LifeRoute 일정은 Notion Calendar에, Notion Calendar에서 Google 캘린더에 만든 일정은
+              LifeRoute ‘오늘’에 나타납니다.
+            </li>
+          </ol>
+          <p className="text-[12px] text-muted-foreground">
+            Notion 데이터베이스의 날짜 속성 일정은 Google에 없으므로 읽지 않습니다.
           </p>
-        </li>
-        <li className="rounded-xl border border-line p-3">
-          <p className="font-semibold">은행</p>
-          <p className="mt-1 text-[12px] text-ink-muted">
-            공식 API 전까지 자산 화면에서 수동 스냅샷으로 기록합니다.
-          </p>
-        </li>
+        </ConnectionItem>
+        <ConnectionItem
+          icon={<Landmark aria-hidden />}
+          title="토스뱅크 잔액 (읽기 전용)"
+          status={tossBank?.status ?? "disconnected"}
+          description="개인이 쓸 수 있는 공식 잔액 API가 확인되기 전까지 자산 화면에서 잔액을 직접 기록합니다."
+        />
+        <ConnectionItem
+          icon={<ChartCandlestick aria-hidden />}
+          title="토스증권 잔고 (읽기 전용)"
+          status={tossSecurities?.status ?? "disconnected"}
+          description="토스증권 Open API(WTS에서 client_id·secret 발급, 허용 IP 등록)의 잔고 조회만 쓸 예정입니다. 연결 전에는 직접 기록하며, 실패해도 기존 잔액을 덮어쓰지 않습니다."
+        />
       </ul>
     </Card>
   );
 }
 
-const MODEL_PRICES: Record<string, { input: string; output: string }> = {
+function ConnectionItem({
+  icon,
+  title,
+  status,
+  statusLabel,
+  description,
+  children,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  status: ConnectionStatus;
+  statusLabel?: string;
+  description: string;
+  children?: React.ReactNode;
+}) {
+  return (
+    <li className="rounded-xl border bg-card p-3">
+      <div className="flex items-start gap-3">
+        <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground [&_svg]:size-4">
+          {icon}
+        </span>
+        <div className="min-w-0 flex-1 space-y-2">
+          <div className="flex items-center justify-between gap-2">
+            <p className="font-semibold">{title}</p>
+            <Badge tone={status === "connected" ? "accent" : status === "disconnected" ? "neutral" : "warn"}>
+              {statusLabel ?? STATUS_LABEL[status]}
+            </Badge>
+          </div>
+          <p className="text-[12px] text-muted-foreground">{description}</p>
+          {children}
+        </div>
+      </div>
+    </li>
+  );
+}
+
+/** GPT model ids offered by the official openai SDK (v7.25); prices are entered by the owner. */
+const OPENAI_MODELS = ["gpt-5.4-mini", "gpt-5.4-nano", "gpt-5.4", "gpt-5.5", "gpt-6-sol"];
+
+const CLAUDE_PRICES: Record<string, { input: string; output: string }> = {
   // KRW per 1M tokens at 1,400 KRW/USD from published USD prices; edit if the rate or price changes.
   "claude-opus-5": { input: "7000", output: "35000" },
   "claude-sonnet-5": { input: "2800", output: "14000" },
@@ -376,12 +429,14 @@ function AiSettings() {
   const save = useSettingsSave();
   const ai = ws.settings.ai;
   const [provider, setProvider] = useState<Settings["ai"]["provider"]>(ai.provider);
-  const [model, setModel] = useState(ai.model ?? "claude-opus-5");
+  const [model, setModel] = useState(ai.model ?? "");
   const [budget, setBudget] = useState(ai.monthlyBudgetKrw);
   const [input, setInput] = useState(ai.inputKrwPer1MTokens ?? "");
   const [output, setOutput] = useState(ai.outputKrwPer1MTokens ?? "");
   const [maxOut, setMaxOut] = useState(String(ai.maxOutputTokens));
-  const valid = isMoney(budget) && (provider === "disconnected" || (isMoney(input) && isMoney(output)));
+  const valid =
+    isMoney(budget) &&
+    (provider === "disconnected" || (model.trim() !== "" && isMoney(input) && isMoney(output)));
   return (
     <Card>
       <CardHeader
@@ -389,43 +444,86 @@ function AiSettings() {
         description={`월 예산 ${formatKrw(ai.monthlyBudgetKrw)} · 이번 달 남음 ${formatKrw(ws.aiBudget.remainingKrw)}`}
       />
       <div className="space-y-3">
-        <Field label="제공자" hint="API 키는 서버의 ANTHROPIC_API_KEY 환경 변수로만 설정합니다.">
+        <Field
+          label="제공자"
+          hint={
+            provider === "anthropic"
+              ? "API 키는 서버의 ANTHROPIC_API_KEY 환경 변수로만 설정합니다."
+              : "API 키는 서버의 OPENAI_API_KEY 환경 변수로만 설정합니다."
+          }
+        >
           {(id, hint) => (
             <Select
               id={id}
               value={provider}
-              onChange={(e) => setProvider(e.target.value as Settings["ai"]["provider"])}
+              onChange={(e) => {
+                const next = e.target.value as Settings["ai"]["provider"];
+                setProvider(next);
+                if (next === "openai" && !model.startsWith("gpt")) setModel("");
+                if (next === "anthropic" && !model.startsWith("claude")) {
+                  setModel("claude-haiku-4-5");
+                  setInput(CLAUDE_PRICES["claude-haiku-4-5"]!.input);
+                  setOutput(CLAUDE_PRICES["claude-haiku-4-5"]!.output);
+                }
+              }}
               aria-describedby={hint}
             >
               <option value="disconnected">사용 안 함</option>
+              <option value="openai">OpenAI GPT</option>
               <option value="anthropic">Anthropic Claude</option>
             </Select>
           )}
         </Field>
-        {provider === "anthropic" ? (
+        {provider !== "disconnected" ? (
           <>
-            <Field label="모델">
-              {(id) => (
-                <Select
-                  id={id}
-                  value={model}
-                  onChange={(e) => {
-                    setModel(e.target.value);
-                    const p = MODEL_PRICES[e.target.value];
-                    if (p) {
-                      setInput(p.input);
-                      setOutput(p.output);
-                    }
-                  }}
-                >
-                  <option value="claude-opus-5">claude-opus-5 (기본)</option>
-                  <option value="claude-sonnet-5">claude-sonnet-5</option>
-                  <option value="claude-haiku-4-5">claude-haiku-4-5 (저렴)</option>
-                </Select>
-              )}
-            </Field>
+            {provider === "openai" ? (
+              <Field label="모델" hint="OpenAI 가격표의 모델 이름을 그대로 입력하거나 목록에서 고르세요.">
+                {(id, hint) => (
+                  <>
+                    <TextInput
+                      id={id}
+                      list={`${id}-models`}
+                      value={model}
+                      onChange={(e) => setModel(e.target.value.trim())}
+                      placeholder="예: gpt-5.4-mini"
+                      aria-describedby={hint}
+                      maxLength={100}
+                    />
+                    <datalist id={`${id}-models`}>
+                      {OPENAI_MODELS.map((m) => (
+                        <option key={m} value={m} />
+                      ))}
+                    </datalist>
+                  </>
+                )}
+              </Field>
+            ) : (
+              <Field label="모델">
+                {(id) => (
+                  <Select
+                    id={id}
+                    value={model}
+                    onChange={(e) => {
+                      setModel(e.target.value);
+                      const p = CLAUDE_PRICES[e.target.value];
+                      if (p) {
+                        setInput(p.input);
+                        setOutput(p.output);
+                      }
+                    }}
+                  >
+                    <option value="claude-opus-5">claude-opus-5</option>
+                    <option value="claude-sonnet-5">claude-sonnet-5</option>
+                    <option value="claude-haiku-4-5">claude-haiku-4-5 (저렴)</option>
+                  </Select>
+                )}
+              </Field>
+            )}
             <div className="grid grid-cols-2 gap-3">
-              <Field label="입력 단가 (원/100만 토큰)">
+              <Field
+                label="입력 단가 (원/100만 토큰)"
+                hint={provider === "openai" ? "USD 가격 × 환율로 직접 입력" : undefined}
+              >
                 {(id) => (
                   <MoneyInput id={id} value={input} maxFractionDigits={2} onChange={(v) => setInput(v)} />
                 )}
@@ -454,12 +552,11 @@ function AiSettings() {
         <Field label="월 예산 (원)">
           {(id) => <MoneyInput id={id} value={budget} maxFractionDigits={0} onChange={(v) => setBudget(v)} />}
         </Field>
-        <p className="text-[12px] text-ink-muted">
+        <p className="text-[12px] text-muted-foreground">
           예산 계산은 추정치 기준 차단입니다. 실제 청구액은 월말에 청구서와 대조하세요.
         </p>
         <div className="flex justify-end">
           <Button
-            variant="primary"
             disabled={!valid}
             onClick={() =>
               save({
@@ -492,7 +589,7 @@ function BackupSettings() {
     <Card>
       <CardHeader title="백업·내보내기" description="매일 암호화 백업 · 보존 7일/4주/12개월" />
       <div className="space-y-3 text-sm">
-        <div className="rounded-xl bg-canvas p-3">
+        <div className="rounded-xl bg-muted p-3">
           <p>
             마지막 백업:{" "}
             {ws.ops.lastBackupAt ? (
@@ -506,7 +603,7 @@ function BackupSettings() {
               </Badge>
             ) : null}
           </p>
-          <p className="mt-0.5 text-[12px] text-ink-muted">
+          <p className="mt-0.5 text-[12px] text-muted-foreground">
             백그라운드 작업기:{" "}
             {ws.ops.workerAlive ? "동작 중" : "꺼짐 — `pnpm worker`를 실행해야 백업·동기화가 돕니다"}
           </p>
@@ -519,22 +616,21 @@ function BackupSettings() {
         </Field>
         <div className="flex flex-wrap justify-end gap-2">
           <Button
+            variant="outline"
             onClick={() => run({ type: "backup.runNow", payload: {} }, { success: "백업을 요청했습니다." })}
           >
             지금 백업
           </Button>
-          <Button variant="primary" onClick={() => save({ backup: { enabled, dailyAt } })}>
-            저장
-          </Button>
+          <Button onClick={() => save({ backup: { enabled, dailyAt } })}>저장</Button>
         </div>
-        <div className="border-t border-line pt-3">
+        <div className="border-t border-border pt-3">
           <a
             href="/api/v1/export"
-            className="inline-flex items-center gap-1.5 text-sm font-semibold text-accent-strong hover:underline"
+            className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary hover:underline"
           >
             <Download className="size-4" aria-hidden /> 전체 내보내기 (JSON + Markdown + 첨부, zip)
           </a>
-          <p className="mt-1 text-[12px] text-ink-muted">
+          <p className="mt-1 text-[12px] text-muted-foreground">
             비밀번호·토큰은 포함되지 않습니다. 복구 훈련과 외부 매체 보관은 직접 해야 합니다
             (docs/11_operations).
           </p>
@@ -553,7 +649,7 @@ function Guidance() {
         title="생활·근로·세무 안내 출처"
         description="공공·공식 출처만 저장합니다 (고용노동부, 국세청, 찾기쉬운 생활법령). 개인 판단을 자동화하지 않습니다."
         action={
-          <Button size="sm" onClick={() => setEditing(null)}>
+          <Button variant="outline" size="sm" onClick={() => setEditing(null)}>
             추가
           </Button>
         }
@@ -564,18 +660,18 @@ function Guidance() {
           description="예: 연말정산 공제 항목(국세청), 연차 계산(고용노동부)"
         />
       ) : (
-        <ul className="divide-y divide-line">
+        <ul className="divide-y divide-border">
           {ws.guidance.map((g) => (
             <li key={g.id} className="flex items-start gap-3 py-2.5 text-sm">
               <div className="min-w-0 flex-1">
                 <button
                   type="button"
-                  className="text-left font-semibold hover:text-accent-strong"
+                  className="text-left font-semibold hover:text-primary"
                   onClick={() => setEditing(g)}
                 >
                   {g.title}
                 </button>
-                <p className="text-[12px] text-ink-muted">
+                <p className="text-[12px] text-muted-foreground">
                   확인일 {g.checkedAt}
                   {g.effectiveDate ? ` · 시행일 ${g.effectiveDate}` : ""} · 해당 여부: 알 수 없음
                 </p>
@@ -585,7 +681,7 @@ function Guidance() {
                 href={g.sourceUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="shrink-0 text-accent-strong"
+                className="shrink-0 text-primary"
                 aria-label={`${g.title} 원문 열기`}
               >
                 <ExternalLink className="size-4" aria-hidden />
@@ -642,7 +738,7 @@ function GuidanceEditor({ source, onClose }: { source: GuidanceSource | null; on
           {source ? (
             <Button
               variant="ghost"
-              className="mr-auto text-danger"
+              className="mr-auto text-destructive"
               onClick={async () =>
                 (await run({
                   type: "guidance.delete",
@@ -656,7 +752,7 @@ function GuidanceEditor({ source, onClose }: { source: GuidanceSource | null; on
           <Button variant="ghost" onClick={onClose}>
             닫기
           </Button>
-          <Button variant="primary" onClick={save} disabled={!title.trim() || !allowed}>
+          <Button onClick={save} disabled={!title.trim() || !allowed}>
             저장
           </Button>
         </>

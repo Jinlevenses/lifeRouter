@@ -25,7 +25,7 @@ export function defaultSettings(today: string): typeof settings.$inferInsert {
     ai: {
       monthlyBudgetKrw: AI_MONTHLY_BUDGET_KRW_DEFAULT,
       provider: "disconnected",
-      model: process.env.LIFEROUTE_AI_MODEL || "claude-opus-5",
+      model: process.env.LIFEROUTE_AI_MODEL || null,
       inputKrwPer1MTokens: null,
       outputKrwPer1MTokens: null,
       charsPerToken: 2,
@@ -38,7 +38,7 @@ export function defaultSettings(today: string): typeof settings.$inferInsert {
 
 export async function ensureSeeded(db: DbOrTx, today: string): Promise<void> {
   await db.insert(settings).values(defaultSettings(today)).onConflictDoNothing();
-  for (const provider of ["google", "toss", "ai"] as const) {
+  for (const provider of ["google", "toss_bank", "toss_securities", "ai"] as const) {
     await db.insert(connections).values({ id: randomUUID(), provider }).onConflictDoNothing();
   }
 }

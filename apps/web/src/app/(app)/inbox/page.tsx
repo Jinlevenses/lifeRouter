@@ -13,11 +13,11 @@ import {
 } from "lucide-react";
 import type { InboxItem, Receipt } from "@liferoute/contracts";
 import { add, formatKrw, isMoney, monthKey, suggestConfirmed } from "@liferoute/core";
-import { Badge, Card, CardHeader, EmptyState, PageHeader } from "@/components/ui/card";
+import { Badge, Card, CardHeader, EmptyState, PageHeader } from "@/components/app/card";
 import { Button } from "@/components/ui/button";
-import { Sheet } from "@/components/ui/dialog";
-import { Field, MoneyInput, TextInput } from "@/components/ui/fields";
-import { useToast } from "@/components/ui/toast";
+import { Sheet } from "@/components/app/dialog";
+import { Field, MoneyInput, TextInput } from "@/components/app/fields";
+import { useToast } from "@/components/app/toast";
 import { ApiRequestError, uploadCapture } from "@/lib/api-client";
 import { useWorkspace } from "@/lib/workspace";
 import { instantLabel } from "@/lib/dates";
@@ -77,7 +77,7 @@ export default function InboxPage() {
               aria-hidden
               onChange={(e) => void upload(e.target.files?.[0])}
             />
-            <Button onClick={() => fileRef.current?.click()} disabled={uploading}>
+            <Button variant="outline" onClick={() => fileRef.current?.click()} disabled={uploading}>
               <Upload className="size-4" aria-hidden /> 영수증 올리기
             </Button>
           </>
@@ -92,7 +92,7 @@ export default function InboxPage() {
               description="빠른 캡처(+)나 iPhone 단축어로 보낸 항목이 여기에 쌓입니다."
             />
           ) : (
-            <ul className="divide-y divide-line">
+            <ul className="divide-y divide-border">
               {fresh.map((item) => (
                 <InboxRow key={item.id} item={item} />
               ))}
@@ -108,26 +108,26 @@ export default function InboxPage() {
             {drafts.length === 0 ? (
               <EmptyState title="확인할 영수증이 없습니다." />
             ) : (
-              <ul className="divide-y divide-line">
+              <ul className="divide-y divide-border">
                 {drafts.map((r) => (
                   <li key={r.id} className="flex items-center gap-3 py-2.5">
                     {r.attachmentId ? (
                       <img
                         src={`/api/v1/attachments/${r.attachmentId}`}
                         alt="영수증"
-                        className="size-12 shrink-0 rounded-lg border border-line object-cover"
+                        className="size-12 shrink-0 rounded-lg border border-border object-cover"
                       />
                     ) : null}
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-[15px] font-medium">
                         {r.fields.merchant.value ?? "가게 미확인"}
                       </p>
-                      <p className="text-[12px] text-ink-muted">
+                      <p className="text-[12px] text-muted-foreground">
                         {r.fields.amount.value ? formatKrw(r.fields.amount.value) : "금액 미확인"} · OCR{" "}
                         {r.ocr.status === "unavailable" ? "사용 안 함" : r.ocr.status}
                       </p>
                     </div>
-                    <Button size="sm" variant="subtle" onClick={() => setConfirming(r)}>
+                    <Button size="sm" variant="soft" onClick={() => setConfirming(r)}>
                       확인
                     </Button>
                   </li>
@@ -141,13 +141,13 @@ export default function InboxPage() {
               description="잔액·순자산에는 영향을 주지 않는 기록입니다."
             />
             <p className="num text-2xl font-bold">{formatKrw(spending)}</p>
-            <ul className="mt-2 divide-y divide-line">
+            <ul className="mt-2 divide-y divide-border">
               {confirmedThisMonth.slice(0, 8).map((r) => (
                 <li key={r.id} className="flex justify-between gap-2 py-1.5 text-[13px]">
                   <span className="truncate">
                     {r.confirmed!.date.slice(5)} · {r.confirmed!.merchant}
                     {r.confirmed!.category ? (
-                      <span className="text-ink-muted"> · {r.confirmed!.category}</span>
+                      <span className="text-muted-foreground"> · {r.confirmed!.category}</span>
                     ) : null}
                   </span>
                   <span className="num shrink-0 font-semibold">{formatKrw(r.confirmed!.amountKrw)}</span>
@@ -169,7 +169,7 @@ function InboxRow({ item }: { item: InboxItem }) {
   return (
     <li className="py-3">
       <div className="flex items-start gap-3">
-        <Icon className="mt-0.5 size-5 shrink-0 text-ink-muted" aria-hidden />
+        <Icon className="mt-0.5 size-5 shrink-0 text-muted-foreground" aria-hidden />
         <div className="min-w-0 flex-1">
           {item.text ? <p className="whitespace-pre-wrap break-words text-[15px]">{item.text}</p> : null}
           {item.url ? (
@@ -177,7 +177,7 @@ function InboxRow({ item }: { item: InboxItem }) {
               href={item.url}
               target="_blank"
               rel="noopener noreferrer nofollow"
-              className="break-all text-[14px] text-accent-strong underline"
+              className="break-all text-[14px] text-primary underline"
             >
               {item.url}
             </a>
@@ -186,10 +186,10 @@ function InboxRow({ item }: { item: InboxItem }) {
             <img
               src={`/api/v1/attachments/${item.attachmentId}`}
               alt="캡처한 이미지"
-              className="mt-1 max-h-40 rounded-lg border border-line"
+              className="mt-1 max-h-40 rounded-lg border border-border"
             />
           ) : null}
-          <p className="mt-1 text-[12px] text-ink-subtle">
+          <p className="mt-1 text-[12px] text-muted-foreground">
             {instantLabel(item.capturedAt, ws.today)} · {SOURCE_LABEL[item.source]}
           </p>
         </div>
@@ -197,7 +197,7 @@ function InboxRow({ item }: { item: InboxItem }) {
       <div className="mt-2 flex flex-wrap gap-1.5 pl-8">
         <Button
           size="sm"
-          variant="subtle"
+          variant="soft"
           onClick={() =>
             run(
               { type: "inbox.convert", payload: { itemId: item.id, target: { type: "task" } } },
@@ -208,6 +208,7 @@ function InboxRow({ item }: { item: InboxItem }) {
           <ListTodo className="size-4" aria-hidden /> 할 일
         </Button>
         <Button
+          variant="outline"
           size="sm"
           onClick={() =>
             run(
@@ -220,6 +221,7 @@ function InboxRow({ item }: { item: InboxItem }) {
         </Button>
         {hasFile ? (
           <Button
+            variant="outline"
             size="sm"
             onClick={() =>
               run(
@@ -300,13 +302,13 @@ function ReceiptSheet({ receipt, onClose }: { receipt: Receipt; onClose: () => v
       wide
       footer={
         <>
-          <Button variant="ghost" className="mr-auto text-danger" onClick={discard}>
+          <Button variant="ghost" className="mr-auto text-destructive" onClick={discard}>
             버리기
           </Button>
           <Button variant="ghost" onClick={onClose}>
             닫기
           </Button>
-          <Button variant="primary" onClick={confirm} disabled={!valid}>
+          <Button onClick={confirm} disabled={!valid}>
             확정
           </Button>
         </>
@@ -323,13 +325,13 @@ function ReceiptSheet({ receipt, onClose }: { receipt: Receipt; onClose: () => v
             <img
               src={`/api/v1/attachments/${receipt.attachmentId}`}
               alt="영수증 원본"
-              className="max-h-[60vh] w-full rounded-lg border border-line object-contain"
+              className="max-h-[60vh] w-full rounded-lg border border-border object-contain"
             />
           </a>
         ) : null}
         <div className="space-y-3">
           {receipt.ocr.status === "unavailable" ? (
-            <p className="rounded-lg bg-canvas px-3 py-2 text-[13px] text-ink-muted">
+            <p className="rounded-lg bg-muted px-3 py-2 text-[13px] text-muted-foreground">
               글자 인식(OCR)이 설정되지 않아 직접 입력합니다.
             </p>
           ) : null}
@@ -388,7 +390,7 @@ function ReceiptSheet({ receipt, onClose }: { receipt: Receipt; onClose: () => v
             )}
           </Field>
           {receipt.ocr.rawText ? (
-            <details className="text-[12px] text-ink-muted">
+            <details className="text-[12px] text-muted-foreground">
               <summary className="cursor-pointer">OCR 원문</summary>
               <pre className="mt-1 whitespace-pre-wrap font-sans">{receipt.ocr.rawText}</pre>
             </details>

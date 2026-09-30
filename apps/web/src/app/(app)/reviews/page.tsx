@@ -2,13 +2,13 @@
 
 import { useMemo, useState } from "react";
 import { Bot, CalendarRange, Lock, RefreshCw } from "lucide-react";
-import clsx from "clsx";
+import { cn } from "@/lib/utils";
 import type { Analysis, CostEstimate, Review } from "@liferoute/contracts";
 import { formatDateKo, formatKrw, periodContaining } from "@liferoute/core";
-import { Badge, Card, CardHeader, EmptyState, PageHeader } from "@/components/ui/card";
+import { Badge, Card, CardHeader, EmptyState, PageHeader } from "@/components/app/card";
 import { Button } from "@/components/ui/button";
-import { Sheet } from "@/components/ui/dialog";
-import { Checkbox, Field, TextArea, TextInput } from "@/components/ui/fields";
+import { Sheet } from "@/components/app/dialog";
+import { Checkbox, Field, TextArea, TextInput } from "@/components/app/fields";
 import { useWorkspace } from "@/lib/workspace";
 import { instantLabel } from "@/lib/dates";
 
@@ -36,10 +36,10 @@ export default function ReviewsPage() {
         description="같은 기록이면 언제 만들어도 같은 결과가 나옵니다. 내가 쓴 회고는 다시 만들어도 지워지지 않습니다."
         action={
           <>
-            <Button onClick={() => generate("weekly")}>
+            <Button variant="outline" onClick={() => generate("weekly")}>
               <CalendarRange className="size-4" aria-hidden /> 이번 주
             </Button>
-            <Button variant="primary" onClick={() => generate("monthly")}>
+            <Button onClick={() => generate("monthly")}>
               <CalendarRange className="size-4" aria-hidden /> 이번 달
             </Button>
           </>
@@ -49,7 +49,7 @@ export default function ReviewsPage() {
         <aside className="space-y-3" aria-label="검토 목록">
           <Card className="!p-3">
             {ws.reviews.length === 0 ? (
-              <p className="p-1 text-[13px] text-ink-muted">아직 검토가 없습니다.</p>
+              <p className="p-1 text-[13px] text-muted-foreground">아직 검토가 없습니다.</p>
             ) : (
               <ul className="space-y-0.5">
                 {ws.reviews.map((r) => (
@@ -58,16 +58,14 @@ export default function ReviewsPage() {
                       type="button"
                       aria-current={review?.id === r.id ? "true" : undefined}
                       onClick={() => setSelected(r.id)}
-                      className={clsx(
+                      className={cn(
                         "flex w-full items-center justify-between gap-2 rounded-lg px-2.5 py-2 text-left text-sm",
-                        review?.id === r.id
-                          ? "bg-accent-soft font-semibold text-accent-strong"
-                          : "hover:bg-canvas",
+                        review?.id === r.id ? "bg-primary/10 font-semibold text-primary" : "hover:bg-muted",
                       )}
                     >
                       <span>{labelFor(r)}</span>
                       {r.status === "finalized" ? (
-                        <Lock className="size-3.5 text-ink-subtle" aria-label="확정됨" />
+                        <Lock className="size-3.5 text-muted-foreground" aria-label="확정됨" />
                       ) : null}
                     </button>
                   </li>
@@ -94,7 +92,7 @@ export default function ReviewsPage() {
                   />
                 )}
               </Field>
-              <Button type="submit" size="sm" disabled={!pastDate}>
+              <Button variant="outline" type="submit" size="sm" disabled={!pastDate}>
                 만들기
               </Button>
             </form>
@@ -162,6 +160,7 @@ function ReviewDetail({ review, current }: { review: Review; current: boolean })
                   <RefreshCw className="size-4" aria-hidden /> 다시 계산
                 </Button>
                 <Button
+                  variant="outline"
                   size="sm"
                   onClick={() =>
                     run({
@@ -197,13 +196,13 @@ function ReviewDetail({ review, current }: { review: Review; current: boolean })
           <Stat label="확정 지출" value={formatKrw(c.spendingKrw)} />
         </dl>
         {c.netWorth.incomplete ? (
-          <p className="mt-2 text-[12px] text-warn">
+          <p className="mt-2 text-[12px] text-warning">
             잔액 기록이 없거나 오래된 계좌가 있어 순자산 변화가 정확하지 않을 수 있습니다.
           </p>
         ) : null}
         {c.routines.length ? (
           <div className="mt-4">
-            <h3 className="mb-1.5 text-[13px] font-semibold text-ink-muted">루틴</h3>
+            <h3 className="mb-1.5 text-[13px] font-semibold text-muted-foreground">루틴</h3>
             <table className="w-full text-sm">
               <thead className="sr-only">
                 <tr>
@@ -215,13 +214,13 @@ function ReviewDetail({ review, current }: { review: Review; current: boolean })
               </thead>
               <tbody>
                 {c.routines.map((r) => (
-                  <tr key={r.routineId} className="border-t border-line">
+                  <tr key={r.routineId} className="border-t border-border">
                     <td className="py-1.5">{routineName(r.routineId)}</td>
                     <td className="num py-1.5 text-right font-semibold">
                       {r.done}/{r.expected}
                     </td>
-                    <td className="num py-1.5 text-right text-ink-muted">건너뜀 {r.skipped}</td>
-                    <td className="num py-1.5 text-right text-ink-muted">미기록 {r.unrecorded}</td>
+                    <td className="num py-1.5 text-right text-muted-foreground">건너뜀 {r.skipped}</td>
+                    <td className="num py-1.5 text-right text-muted-foreground">미기록 {r.unrecorded}</td>
                   </tr>
                 ))}
               </tbody>
@@ -230,7 +229,7 @@ function ReviewDetail({ review, current }: { review: Review; current: boolean })
         ) : null}
         {c.overdueTasks.taskIds.length ? (
           <div className="mt-4">
-            <h3 className="mb-1 text-[13px] font-semibold text-ink-muted">기한 지난 할 일</h3>
+            <h3 className="mb-1 text-[13px] font-semibold text-muted-foreground">기한 지난 할 일</h3>
             <ul className="list-disc pl-5 text-sm">
               {c.overdueTasks.taskIds.slice(0, 10).map((id) => (
                 <li key={id}>{tasksById.get(id) ?? "(목록 밖 할 일)"}</li>
@@ -238,7 +237,7 @@ function ReviewDetail({ review, current }: { review: Review; current: boolean })
             </ul>
           </div>
         ) : null}
-        <p className="mt-3 text-[12px] text-ink-subtle">
+        <p className="mt-3 text-[12px] text-muted-foreground">
           노트 {c.notesCreated}개 작성 · 루틴 기록 {c.checkInsRecorded}회
         </p>
       </Card>
@@ -269,7 +268,7 @@ function ReviewDetail({ review, current }: { review: Review; current: boolean })
                 )}
               </Field>
               {draft.length ? (
-                <ul className="mt-1.5 space-y-0.5 text-[12px] text-ink-muted">
+                <ul className="mt-1.5 space-y-0.5 text-[12px] text-muted-foreground">
                   {draft.map((d) => (
                     <li key={d}>· {d}</li>
                   ))}
@@ -292,7 +291,6 @@ function ReviewDetail({ review, current }: { review: Review; current: boolean })
         {!locked ? (
           <div className="mt-3 flex justify-end">
             <Button
-              variant="primary"
               disabled={!dirty}
               onClick={() =>
                 run(
@@ -315,9 +313,9 @@ function ReviewDetail({ review, current }: { review: Review; current: boolean })
 
 function Stat({ label, value, tone }: { label: string; value: string; tone?: "warn" }) {
   return (
-    <div className="rounded-lg bg-canvas p-2.5">
-      <dt className="text-[12px] text-ink-muted">{label}</dt>
-      <dd className={clsx("num mt-0.5 font-bold", tone === "warn" && "text-warn")}>{value}</dd>
+    <div className="rounded-lg bg-muted p-2.5">
+      <dt className="text-[12px] text-muted-foreground">{label}</dt>
+      <dd className={cn("num mt-0.5 font-bold", tone === "warn" && "text-warning")}>{value}</dd>
     </div>
   );
 }
@@ -342,12 +340,13 @@ function AiAnalysis() {
       <CardHeader
         title={
           <span className="inline-flex items-center gap-1.5">
-            <Bot className="size-4 text-accent" aria-hidden /> AI 분석 (선택)
+            <Bot className="size-4 text-primary" aria-hidden /> AI 분석 (선택)
           </span>
         }
         description={`이번 달 예산 ${formatKrw(budget.budgetKrw)} · 사용 ${formatKrw(budget.usedKrw)} · 예약 ${formatKrw(budget.reservedKrw)} · 남음 ${formatKrw(budget.remainingKrw)}`}
         action={
           <Button
+            variant="outline"
             size="sm"
             onClick={() => setOpen(true)}
             disabled={!budget.configured}
@@ -358,13 +357,13 @@ function AiAnalysis() {
         }
       />
       {!budget.configured ? (
-        <p className="text-[13px] text-ink-muted">
+        <p className="text-[13px] text-muted-foreground">
           AI는 꺼져 있습니다. 설정에서 제공자·단가를 입력하고 서버에 API 키를 둔 경우에만, 고른 노트만 보내
           분석합니다. 재무·일정은 AI가 바꾸지 않습니다.
         </p>
       ) : null}
       {ws.analyses.length ? (
-        <ul className="mt-2 divide-y divide-line">
+        <ul className="mt-2 divide-y divide-border">
           {ws.analyses.slice(0, 10).map((a) => (
             <AnalysisRow key={a.id} analysis={a} />
           ))}
@@ -394,12 +393,12 @@ function AnalysisRow({ analysis }: { analysis: Analysis }) {
           {ANALYSIS_STATUS[analysis.status]}
         </Badge>
       </div>
-      <p className="text-[12px] text-ink-muted">
+      <p className="text-[12px] text-muted-foreground">
         노트 {analysis.noteIds.length}개 · 예상 {formatKrw(cost)} ·{" "}
         {instantLabel(analysis.createdAt, ws.today)}
       </p>
       {analysis.status === "previewed" ? (
-        <div className="mt-2 space-y-2 rounded-lg bg-canvas p-3">
+        <div className="mt-2 space-y-2 rounded-lg bg-muted p-3">
           <Checkbox
             checked={consent}
             onChange={setConsent}
@@ -407,14 +406,14 @@ function AnalysisRow({ analysis }: { analysis: Analysis }) {
             description={`예상 비용 ${formatKrw(cost)} · 이번 달 남은 예산 ${formatKrw(estimate?.remainingKrw ?? "0")}`}
           />
           {refreshed ? (
-            <p className="text-[12px] font-semibold text-warn">
+            <p className="text-[12px] font-semibold text-warning">
               노트가 바뀌어 예상 비용이 {formatKrw(cost)}으로 다시 계산되었습니다. 다시 확인해 주세요.
             </p>
           ) : null}
           <div className="flex gap-2">
             <Button
               size="sm"
-              variant="primary"
+
               disabled={!consent}
               onClick={() =>
                 run(
@@ -457,9 +456,9 @@ function AnalysisRow({ analysis }: { analysis: Analysis }) {
         </div>
       ) : null}
       {analysis.resultText ? (
-        <div className="mt-2 whitespace-pre-wrap rounded-lg bg-canvas p-3 text-sm">{analysis.resultText}</div>
+        <div className="mt-2 whitespace-pre-wrap rounded-lg bg-muted p-3 text-sm">{analysis.resultText}</div>
       ) : null}
-      {analysis.error ? <p className="mt-1 text-[12px] text-danger">{analysis.error}</p> : null}
+      {analysis.error ? <p className="mt-1 text-[12px] text-destructive">{analysis.error}</p> : null}
     </li>
   );
 }
@@ -485,7 +484,7 @@ function AnalysisSheet({ onClose }: { onClose: () => void }) {
           <Button variant="ghost" onClick={onClose}>
             닫기
           </Button>
-          <Button variant="primary" disabled={!purpose.trim() || noteIds.length === 0} onClick={preview}>
+          <Button disabled={!purpose.trim() || noteIds.length === 0} onClick={preview}>
             예상 비용 보기
           </Button>
         </>
@@ -504,7 +503,9 @@ function AnalysisSheet({ onClose }: { onClose: () => void }) {
           )}
         </Field>
         <fieldset>
-          <legend className="label">보낼 노트 ({noteIds.length})</legend>
+          <legend className="mb-1.5 block text-[13px] font-semibold text-muted-foreground">
+            보낼 노트 ({noteIds.length})
+          </legend>
           <ul className="max-h-72 space-y-1 overflow-y-auto">
             {ws.notes.map((n) => (
               <li key={n.id}>

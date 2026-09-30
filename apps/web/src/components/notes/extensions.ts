@@ -84,7 +84,7 @@ export const AttachmentImage = Node.create({
         src: `/api/v1/attachments/${encodeURIComponent(String(node.attrs.attachmentId))}`,
         alt: node.attrs.alt ?? "",
         "data-attachment-id": node.attrs.attachmentId,
-        class: "my-2 max-h-[480px] rounded-lg border border-line",
+        class: "my-2 max-h-[480px] rounded-lg border border-border",
         loading: "lazy",
       },
     ];

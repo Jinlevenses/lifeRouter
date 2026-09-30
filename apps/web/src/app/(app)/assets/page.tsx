@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { History, Plus } from "lucide-react";
-import clsx from "clsx";
+import { cn } from "@/lib/utils";
 import {
   ASSET_CATEGORIES,
   LIABILITY_CATEGORIES,
@@ -11,10 +11,12 @@ import {
   type BalanceSnapshot,
 } from "@liferoute/contracts";
 import { formatAmount, formatKrw, formatKrwCompact, goalPercent, isMoney } from "@liferoute/core";
-import { Badge, Card, CardHeader, EmptyState, PageHeader } from "@/components/ui/card";
+import { Badge, Card, CardHeader, EmptyState, PageHeader } from "@/components/app/card";
 import { Button } from "@/components/ui/button";
-import { Sheet } from "@/components/ui/dialog";
-import { Checkbox, Field, MoneyInput, Select, TextArea, TextInput } from "@/components/ui/fields";
+import { Segmented } from "@/components/app/segmented";
+import { GoalRing } from "@/components/app/goal-ring";
+import { Sheet } from "@/components/app/dialog";
+import { Checkbox, Field, MoneyInput, Select, TextArea, TextInput } from "@/components/app/fields";
 import { useWorkspace } from "@/lib/workspace";
 import { CATEGORY_LABEL } from "@/lib/labels";
 
@@ -36,7 +38,7 @@ export default function AssetsPage() {
         title="자산"
         description="잔액은 공식 API 연결 전까지 직접 기록한 스냅샷입니다. 국민연금 미래 수급권은 포함하지 않습니다."
         action={
-          <Button variant="primary" onClick={() => setAccountEditor(null)}>
+          <Button onClick={() => setAccountEditor(null)}>
             <Plus className="size-4" aria-hidden /> 계좌
           </Button>
         }
@@ -51,44 +53,39 @@ export default function AssetsPage() {
           />
           <p className="num text-[30px] font-bold tracking-tight">{formatKrw(nw.netWorthKrw)}</p>
           <dl className="num mt-3 grid grid-cols-3 gap-2 text-[13px]">
-            <div className="rounded-lg bg-canvas p-2.5">
-              <dt className="text-ink-muted">포함 자산</dt>
+            <div className="rounded-lg bg-muted p-2.5">
+              <dt className="text-muted-foreground">포함 자산</dt>
               <dd className="mt-0.5 font-semibold">{formatKrwCompact(nw.includedAssetsKrw)}</dd>
             </div>
-            <div className="rounded-lg bg-canvas p-2.5">
-              <dt className="text-ink-muted">부채 (전액 차감)</dt>
+            <div className="rounded-lg bg-muted p-2.5">
+              <dt className="text-muted-foreground">부채 (전액 차감)</dt>
               <dd className="mt-0.5 font-semibold">{formatKrwCompact(nw.liabilitiesKrw)}</dd>
             </div>
-            <div className="rounded-lg bg-canvas p-2.5">
-              <dt className="text-ink-muted">유동 자산</dt>
+            <div className="rounded-lg bg-muted p-2.5">
+              <dt className="text-muted-foreground">유동 자산</dt>
               <dd className="mt-0.5 font-semibold">{formatKrwCompact(nw.liquidAssetsKrw)}</dd>
             </div>
           </dl>
-          <div className="mt-4">
-            <div className="flex items-baseline justify-between text-[13px]">
-              <span className="font-semibold">
+          <div className="mt-4 flex items-center gap-4 rounded-xl bg-muted/60 p-3">
+            <GoalRing percent={goalPercent(nw.netWorthKrw, nw.goal.amountKrw)} />
+            <div className="min-w-0">
+              <p className="text-[13px] font-semibold">
                 목표 {formatKrwCompact(nw.goal.amountKrw)} · {nw.goal.targetDate}
-              </span>
-              <span className="num text-ink-muted">
-                {goalPercent(nw.netWorthKrw, nw.goal.amountKrw).toFixed(1)}%
-              </span>
+                <span className="num ml-1.5 text-primary">
+                  {goalPercent(nw.netWorthKrw, nw.goal.amountKrw).toFixed(1)}%
+                </span>
+              </p>
+              <p className="mt-1 text-[13px] text-muted-foreground">
+                {nw.goal.status === "active"
+                  ? `남은 금액 ${formatKrw(nw.goal.gapKrw)} · ${nw.goal.remainingMonths}개월 · 매달 ${formatKrw(nw.goal.monthlyRequiredKrw ?? "0")}`
+                  : nw.goal.status === "achieved"
+                    ? "목표 달성"
+                    : "목표일이 지났습니다"}
+              </p>
             </div>
-            <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-canvas">
-              <div
-                className="h-full rounded-full bg-accent"
-                style={{ width: `${Math.min(100, goalPercent(nw.netWorthKrw, nw.goal.amountKrw))}%` }}
-              />
-            </div>
-            <p className="mt-2 text-[13px] text-ink-muted">
-              {nw.goal.status === "active"
-                ? `남은 금액 ${formatKrw(nw.goal.gapKrw)} · ${nw.goal.remainingMonths}개월 · 매달 ${formatKrw(nw.goal.monthlyRequiredKrw ?? "0")}`
-                : nw.goal.status === "achieved"
-                  ? "목표 달성"
-                  : "목표일이 지났습니다"}
-            </p>
           </div>
           {nw.data === "incomplete" ? (
-            <div className="mt-3 rounded-lg bg-warn-soft px-3 py-2 text-[13px] text-warn">
+            <div className="mt-3 rounded-lg bg-warning/10 px-3 py-2 text-[13px] text-warning">
               <p className="font-semibold">합계가 불완전합니다.</p>
               <ul className="mt-0.5 list-disc pl-4">
                 {nw.missingAccountIds.length ? (
@@ -103,7 +100,7 @@ export default function AssetsPage() {
             </div>
           ) : null}
           {nw.estimatedAccountIds.length ? (
-            <p className="mt-2 text-[12px] text-ink-muted">
+            <p className="mt-2 text-[12px] text-muted-foreground">
               추정값이 들어간 계좌 {nw.estimatedAccountIds.length}개
             </p>
           ) : null}
@@ -123,7 +120,7 @@ export default function AssetsPage() {
                     title={kind === "asset" ? "자산 계좌가 없습니다." : "등록된 부채가 없습니다."}
                   />
                 ) : (
-                  <ul className="divide-y divide-line">
+                  <ul className="divide-y divide-border">
                     {list.map((a) => {
                       const r = rows.get(a.id);
                       return (
@@ -134,7 +131,7 @@ export default function AssetsPage() {
                             onClick={() => setAccountEditor(a)}
                           >
                             <span className="block truncate text-[15px] font-semibold">{a.name}</span>
-                            <span className="flex flex-wrap items-center gap-1 text-[12px] text-ink-muted">
+                            <span className="flex flex-wrap items-center gap-1 text-[12px] text-muted-foreground">
                               {CATEGORY_LABEL[a.category]}
                               {a.institution ? ` · ${a.institution}` : ""}
                               {a.currency !== "KRW" ? ` · ${a.currency}` : ""}
@@ -147,19 +144,19 @@ export default function AssetsPage() {
                           </button>
                           <div className="text-right">
                             <p
-                              className={clsx(
+                              className={cn(
                                 "num text-[15px] font-semibold",
-                                kind === "liability" && "text-danger",
+                                kind === "liability" && "text-destructive",
                               )}
                             >
                               {r?.amountKrw
                                 ? `${kind === "liability" ? "-" : ""}${formatKrw(r.amountKrw)}`
                                 : "—"}
                             </p>
-                            <p className="text-[12px] text-ink-subtle">{r?.asOf ?? "기록 없음"}</p>
+                            <p className="text-[12px] text-muted-foreground">{r?.asOf ?? "기록 없음"}</p>
                           </div>
                           <div className="flex shrink-0 flex-col gap-1 sm:flex-row">
-                            <Button size="sm" variant="subtle" onClick={() => setSnapshotFor(a)}>
+                            <Button size="sm" variant="soft" onClick={() => setSnapshotFor(a)}>
                               잔액
                             </Button>
                             <Button
@@ -191,12 +188,12 @@ export default function AssetsPage() {
                 }
               />
               {showArchived ? (
-                <ul className="divide-y divide-line">
+                <ul className="divide-y divide-border">
                   {archived.map((a) => (
                     <li key={a.id} className="flex items-center justify-between gap-3 py-2">
                       <button type="button" className="min-w-0 text-left" onClick={() => setAccountEditor(a)}>
                         <span className="block truncate text-[15px] font-medium">{a.name}</span>
-                        <span className="text-[12px] text-ink-muted">사유: {a.archiveReason}</span>
+                        <span className="text-[12px] text-muted-foreground">사유: {a.archiveReason}</span>
                       </button>
                     </li>
                   ))}
@@ -287,7 +284,7 @@ function AccountEditor({ account, onClose }: { account: Account | null; onClose:
           <Button variant="ghost" onClick={onClose}>
             닫기
           </Button>
-          <Button variant="primary" onClick={save} disabled={!name.trim() || !/^[A-Za-z]{3}$/.test(currency)}>
+          <Button onClick={save} disabled={!name.trim() || !/^[A-Za-z]{3}$/.test(currency)}>
             저장
           </Button>
         </>
@@ -295,28 +292,21 @@ function AccountEditor({ account, onClose }: { account: Account | null; onClose:
     >
       <div className="space-y-4">
         {!account ? (
-          <div role="radiogroup" aria-label="종류" className="flex gap-2">
-            {(["asset", "liability"] as const).map((k) => (
-              <button
-                key={k}
-                type="button"
-                role="radio"
-                aria-checked={kind === k}
-                onClick={() => {
-                  setKind(k);
-                  setCategory(k === "asset" ? "deposit" : "loan");
-                }}
-                className={clsx(
-                  "flex-1 rounded-[10px] border px-3 py-2 text-sm font-semibold",
-                  kind === k
-                    ? "border-accent bg-accent-soft text-accent-strong"
-                    : "border-line-strong text-ink-muted",
-                )}
-              >
-                {k === "asset" ? "자산" : "부채"}
-              </button>
-            ))}
-          </div>
+          <Segmented
+            label="종류"
+            value={kind}
+            onChange={(k) => {
+              setKind(k);
+              setCategory(k === "asset" ? "deposit" : "loan");
+            }}
+            options={[
+              { value: "asset", label: "자산" },
+              { value: "liability", label: "부채" },
+            ]}
+            size="default"
+            className="w-full"
+            itemClassName="flex-1"
+          />
         ) : null}
         <Field label="이름">
           {(id) => (
@@ -358,18 +348,26 @@ function AccountEditor({ account, onClose }: { account: Account | null; onClose:
             )}
           </Field>
         </div>
-        <Field label="금융기관 (선택)">
-          {(id) => (
-            <TextInput
-              id={id}
-              value={institution}
-              onChange={(e) => setInstitution(e.target.value)}
-              maxLength={100}
-            />
+        <Field label="금융기관 (선택)" hint="토스뱅크·토스증권 계좌는 연결되기 전까지 직접 기록합니다.">
+          {(id, hint) => (
+            <>
+              <TextInput
+                id={id}
+                list={`${id}-institutions`}
+                value={institution}
+                onChange={(e) => setInstitution(e.target.value)}
+                maxLength={100}
+                aria-describedby={hint}
+              />
+              <datalist id={`${id}-institutions`}>
+                <option value="토스뱅크" />
+                <option value="토스증권" />
+              </datalist>
+            </>
           )}
         </Field>
         {kind === "asset" ? (
-          <div className="space-y-2.5 rounded-xl bg-canvas p-3">
+          <div className="space-y-2.5 rounded-xl bg-muted p-3">
             <Checkbox
               checked={included}
               onChange={setIncluded}
@@ -384,7 +382,7 @@ function AccountEditor({ account, onClose }: { account: Account | null; onClose:
             />
           </div>
         ) : (
-          <p className="rounded-xl bg-canvas p-3 text-[13px] text-ink-muted">
+          <p className="rounded-xl bg-muted p-3 text-[13px] text-muted-foreground">
             부채는 항상 순자산에서 전액 차감됩니다. 다 갚았다면 사유와 함께 보관하세요.
           </p>
         )}
@@ -400,11 +398,11 @@ function AccountEditor({ account, onClose }: { account: Account | null; onClose:
           )}
         </Field>
         {account ? (
-          <div className="rounded-xl border border-line p-3">
+          <div className="rounded-xl border border-border p-3">
             {account.archivedAt ? (
               <div className="flex items-center justify-between gap-2">
-                <p className="text-[13px] text-ink-muted">보관됨 · 사유: {account.archiveReason}</p>
-                <Button size="sm" onClick={archive}>
+                <p className="text-[13px] text-muted-foreground">보관됨 · 사유: {account.archiveReason}</p>
+                <Button variant="outline" size="sm" onClick={archive}>
                   복원
                 </Button>
               </div>
@@ -421,7 +419,7 @@ function AccountEditor({ account, onClose }: { account: Account | null; onClose:
                     />
                   )}
                 </Field>
-                <Button onClick={archive} disabled={!archiveReason.trim()}>
+                <Button variant="outline" onClick={archive} disabled={!archiveReason.trim()}>
                   보관
                 </Button>
               </div>
@@ -493,7 +491,7 @@ function SnapshotEditor({ account, onClose }: { account: Account; onClose: () =>
           <Button variant="ghost" onClick={onClose}>
             닫기
           </Button>
-          <Button variant="primary" onClick={save} disabled={!valid}>
+          <Button onClick={save} disabled={!valid}>
             {replace ? "같은 날짜 교체" : "저장"}
           </Button>
         </>
@@ -564,7 +562,7 @@ function SnapshotEditor({ account, onClose }: { account: Account; onClose: () =>
           </Field>
         ) : null}
         {replace ? (
-          <p className="rounded-lg bg-warn-soft px-3 py-2 text-[13px] text-warn">
+          <p className="rounded-lg bg-warning/10 px-3 py-2 text-[13px] text-warning">
             이 날짜의 잔액이 이미 있습니다. 한 번 더 누르면 교체합니다.
           </p>
         ) : null}
@@ -587,26 +585,30 @@ function SnapshotHistory({ account, onClose }: { account: Account; onClose: () =
       {list.length === 0 ? (
         <EmptyState title="기록이 없습니다." />
       ) : (
-        <ul className="divide-y divide-line">
+        <ul className="divide-y divide-border">
           {list.map((s) => (
             <li key={s.id} className="flex items-center gap-3 py-2.5">
               <div className="min-w-0 flex-1">
                 <p className="num text-[15px] font-semibold">
                   {formatAmount(s.amount)} {s.currency}
                   {s.currency !== "KRW" ? (
-                    <span className="ml-1 text-[13px] font-normal text-ink-muted">
+                    <span className="ml-1 text-[13px] font-normal text-muted-foreground">
                       ≈ {formatKrw(s.amountKrw)}
                     </span>
                   ) : null}
                 </p>
-                <p className="text-[12px] text-ink-muted">
+                <p className="text-[12px] text-muted-foreground">
                   {s.asOf}
                   {s.fxRate ? ` · 환율 ${formatAmount(s.fxRate)}` : ""}
                   {s.estimated ? ` · 추정: ${s.reason}` : ""}
-                  {s.source === "toss" ? " · Toss" : ""}
+                  {s.source === "toss_bank"
+                    ? " · 토스뱅크"
+                    : s.source === "toss_securities"
+                      ? " · 토스증권"
+                      : ""}
                 </p>
               </div>
-              <Button size="sm" variant="ghost" className="text-danger" onClick={() => remove(s)}>
+              <Button size="sm" variant="ghost" className="text-destructive" onClick={() => remove(s)}>
                 삭제
               </Button>
             </li>

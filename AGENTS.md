@@ -19,6 +19,7 @@ AI 에이전트와 사람이 이 저장소에서 작업할 때 지키는 규칙�
 - AI는 소유자가 고른 노트만, 예상 비용·잔여 예산 확인과 명시적 동의 뒤에만. AI는 재무·일정·설정 명령을 실행할 수 없다.
 - 비밀·개인 데이터·첨부·백업은 저장소 밖(`LIFEROUTE_DATA_DIR`, `.env.local`). 로그에 잔액·본문·토큰 금지.
 - 공개 가입 없음. 소유자는 `pnpm owner:create`로 한 명만.
+- UI 부품은 shadcn/ui·Magic UI를 공식 CLI(`pnpm dlx shadcn@latest add …`, `apps/web`에서)로 `components/ui`에 추가한다. 손으로 비슷한 부품을 새로 만들지 않고, 앱 전용 조합은 `components/app`에 둔다. `components/ui`를 고치면 `// LifeRoute:` 주석을 남긴다. 금액은 애니메이션하지 않는다.
 
 ## 변경 절차
 - 계약을 바꾸면: `packages/contracts/index.ts` → `docs/00_project`(ADR·추적성) → 해당 영역 문서 → 테스트.

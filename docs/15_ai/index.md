@@ -21,7 +21,7 @@
 AI 분석 실행은 선택 원문, purpose, 예상 비용 및 월 AI 3,000 KRW 잔여 예산을 사전 표시하고 명시적 동의를 받는다. 원문은 실행 범위 밖으로 보내지 않으며 결과는 `Analysis`에 기록한다.
 
 ## 구현 메모 (2026-09-28)
-- 제공자: Anthropic Claude(`@anthropic-ai/sdk`), `ANTHROPIC_API_KEY`가 있을 때만 활성. 기본 모델 `claude-opus-5`(설정에서 `claude-sonnet-5`, `claude-haiku-4-5` 선택 가능). 단가는 1,400원/USD 기준 자동 채움 값이며 소유자가 수정한다.
-- `claude-opus-5` 등 최신 모델에는 서버 측 fallback(`fallbacks: "default"`)과 `effort: low`를 켠다. fallback 모델이 응답하면 단가가 달라질 수 있어 월말 청구서 대조가 필요하다.
+- 제공자 (2026-09-30, Q-4 → ADR-013): 기본은 꺼짐, 사용 시 **OpenAI GPT**(공식 `openai` SDK, Responses API). `OPENAI_API_KEY`가 있고 설정에서 OpenAI를 고른 경우만 활성. 모델 이름(예: SDK 목록의 `gpt-5.4-mini`)과 단가(원/100만 토큰)는 소유자가 OpenAI 가격표 × 환율로 입력한다. `max_output_tokens`가 비용 상한이고, 추론 모델은 `reasoning.effort: low`, `store: false`로 보낸다. 사용 원장에는 실제 제공자·모델·토큰이 기록된다.
+- 선택지: Anthropic Claude(`ANTHROPIC_API_KEY`). 단가는 1,400원/USD 기준 자동 채움 값이며 최신 모델은 서버 측 fallback과 `effort: low`를 켠다.
 - 전송 범위: 선택한 노트의 제목과 파생 텍스트만. 시스템 프롬프트는 노트를 지시가 아닌 자료로 다루고, 세무·법률·투자 판단을 단정하지 않으며 재무·일정 변경을 지시하지 않는다.
 - AI actor는 `account.`, `snapshot.`, `calendar.`, `receipt.confirm`, `settings.` 명령을 실행할 수 없다(403).

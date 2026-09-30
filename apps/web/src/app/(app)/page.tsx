@@ -1,15 +1,33 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
-import { ArrowRight, CalendarDays, Check, Minus, Plus, RotateCcw, Star, X } from "lucide-react";
-import clsx from "clsx";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useReducedMotion } from "motion/react";
+import {
+  ArrowRight,
+  CalendarDays,
+  Check,
+  Inbox,
+  Minus,
+  PartyPopper,
+  Plus,
+  Repeat,
+  RotateCcw,
+  Star,
+  X,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
 import type { Task } from "@liferoute/contracts";
 import { formatDateKo, formatKrw, formatKrwCompact, goalPercent } from "@liferoute/core";
-import { Badge, Card, CardHeader, EmptyState } from "@/components/ui/card";
+import { Badge, Card, CardHeader, EmptyState, PageHeader } from "@/components/app/card";
+import { StatTile } from "@/components/app/stat-tile";
+import { GoalRing } from "@/components/app/goal-ring";
+import { BlurFade } from "@/components/ui/blur-fade";
+import { BorderBeam } from "@/components/ui/border-beam";
+import { Confetti, type ConfettiRef } from "@/components/ui/confetti";
 import { Button } from "@/components/ui/button";
-import { Sheet } from "@/components/ui/dialog";
-import { TextInput } from "@/components/ui/fields";
+import { Sheet } from "@/components/app/dialog";
+import { TextInput } from "@/components/app/fields";
 import { TaskRow } from "@/components/plan/task-row";
 import { TaskEditor } from "@/components/plan/task-editor";
 import { useWorkspace } from "@/lib/workspace";
@@ -24,30 +42,98 @@ export default function TodayPage() {
     setEditing(task);
     setEditorOpen(true);
   };
+  const confetti = useRef<ConfettiRef>(null);
+  const celebrate = () =>
+    void confetti.current?.fire({
+      particleCount: 90,
+      spread: 70,
+      origin: { y: 0.3 },
+      disableForReducedMotion: true,
+    });
 
   return (
     <div className="space-y-4">
-      <header className="mb-1">
-        <p className="text-sm font-semibold text-accent">{formatDateKo(ws.today)}</p>
-        <h1 className="mt-0.5 text-[22px] font-bold tracking-tight sm:text-2xl">오늘</h1>
-      </header>
+      <PageHeader
+        eyebrow={formatDateKo(ws.today)}
+        title="오늘"
+        description="많이 하는 것보다 중요한 것을 끝내는 하루."
+      />
+      <TodayStats />
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)]">
         <div className="space-y-4">
-          <TopThree onOpen={open} />
-          <Schedule onOpen={open} />
+          <BlurFade delay={0.05}>
+            <TopThree onOpen={open} onAllDone={celebrate} />
+          </BlurFade>
+          <BlurFade delay={0.1}>
+            <Schedule onOpen={open} />
+          </BlurFade>
           <Overdue onOpen={open} />
         </div>
         <div className="space-y-4">
-          <Routines />
-          <NetWorth />
+          <BlurFade delay={0.1}>
+            <Routines />
+          </BlurFade>
+          <BlurFade delay={0.15}>
+            <NetWorth />
+          </BlurFade>
         </div>
       </div>
       <TaskEditor key={editing?.id ?? "new"} open={editorOpen} onOpenChange={setEditorOpen} task={editing} />
+      {/* Outside the BlurFade wrappers: their filter would clip a fixed canvas to the card. */}
+      <Confetti
+        ref={confetti}
+        manualstart
+        className="pointer-events-none fixed inset-0 z-50 size-full"
+        aria-hidden
+      />
     </div>
   );
 }
 
-function TopThree({ onOpen }: { onOpen: (t: Task) => void }) {
+/** Four at-a-glance counts; each links to the screen that manages it. */
+function TodayStats() {
+  const { ws } = useWorkspace();
+  const chosenDone = ws.tasks.filter((t) => t.topDate === ws.today && t.status === "done").length;
+  const routines = ws.todayView.routines.filter((r) => r.state !== "notExpected");
+  const routinesDone = routines.filter((r) => r.state === "done").length;
+  const scheduleCount = ws.todayView.calendarEventIds.length + ws.todayView.plannedTaskIds.length;
+  const inboxNew = ws.inbox.filter((i) => i.status === "new").length;
+  return (
+    <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <StatTile
+        icon={Star}
+        label="3가지 완료"
+        value={chosenDone}
+        total={3}
+        progress={(chosenDone / 3) * 100}
+      />
+      <StatTile
+        icon={Repeat}
+        label="루틴"
+        value={routinesDone}
+        total={routines.length}
+        progress={routines.length ? (routinesDone / routines.length) * 100 : 0}
+        href="/plans?tab=routines"
+      />
+      <StatTile
+        icon={CalendarDays}
+        label="오늘 일정"
+        value={scheduleCount}
+        hint={scheduleCount ? "시간순으로 아래에 정리" : "잡힌 일정 없음"}
+        href="/plans?tab=calendar"
+      />
+      <StatTile
+        icon={Inbox}
+        label="Inbox"
+        value={inboxNew}
+        hint={inboxNew ? "정리할 캡처가 있습니다" : "모두 정리됨"}
+        href="/inbox"
+      />
+    </div>
+  );
+}
+
+function TopThree({ onOpen, onAllDone }: { onOpen: (t: Task) => void; onAllDone: () => void }) {
   const { ws, run } = useWorkspace();
   const byId = useMemo(() => new Map(ws.tasks.map((t) => [t.id, t])), [ws.tasks]);
   const top = ws.todayView.topTaskIds.map((id) => byId.get(id)).filter(Boolean) as Task[];
@@ -55,6 +141,13 @@ function TopThree({ onOpen }: { onOpen: (t: Task) => void }) {
   const stale = ws.todayView.staleTopTaskIds.map((id) => byId.get(id)).filter(Boolean) as Task[];
   const [picker, setPicker] = useState(false);
   const [quick, setQuick] = useState("");
+  const reduceMotion = useReducedMotion();
+  const previousDone = useRef(doneToday.length);
+  useEffect(() => {
+    // Celebrate the moment the third chosen task is finished (not on page load).
+    if (previousDone.current < 3 && doneToday.length >= 3 && top.length === 0) onAllDone();
+    previousDone.current = doneToday.length;
+  }, [doneToday.length, top.length, onAllDone]);
 
   async function addQuick() {
     const title = quick.trim();
@@ -69,35 +162,41 @@ function TopThree({ onOpen }: { onOpen: (t: Task) => void }) {
   }
 
   return (
-    <Card aria-labelledby="top3-title">
+    <Card aria-labelledby="top3-title" className="relative overflow-hidden">
+      {top.length > 0 && !reduceMotion ? (
+        <BorderBeam size={140} duration={9} colorFrom="#0f766e" colorTo="#5eead4" borderWidth={1.5} />
+      ) : null}
       <CardHeader
         title={
           <span id="top3-title" className="inline-flex items-center gap-1.5">
-            <Star className="size-4 text-accent" aria-hidden /> 오늘의 3가지
+            <Star className="size-4 text-primary" aria-hidden /> 오늘의 3가지
           </span>
         }
         description={`${top.length}/3 · 완료 ${doneToday.length}`}
         action={
           top.length < 3 ? (
-            <Button size="sm" variant="subtle" onClick={() => setPicker(true)}>
+            <Button size="sm" variant="soft" onClick={() => setPicker(true)}>
               <Plus className="size-4" aria-hidden /> 고르기
             </Button>
           ) : null
         }
       />
       {stale.length > 0 ? (
-        <div className="mb-3 rounded-xl bg-warn-soft px-3 py-2.5 text-[13px]">
-          <p className="font-semibold text-warn">지난 날의 3가지 중 {stale.length}개가 아직 열려 있습니다.</p>
+        <div className="mb-3 rounded-xl bg-warning/10 px-3 py-2.5 text-[13px]">
+          <p className="font-semibold text-warning">
+            지난 날의 3가지 중 {stale.length}개가 아직 열려 있습니다.
+          </p>
           <ul className="mt-1.5 space-y-1">
             {stale.slice(0, 3).map((t) => (
               <li key={t.id} className="flex items-center justify-between gap-2">
                 <span className="truncate">
-                  {t.title} <span className="text-ink-muted">({relativeDay(t.topDate!, ws.today)})</span>
+                  {t.title}{" "}
+                  <span className="text-muted-foreground">({relativeDay(t.topDate!, ws.today)})</span>
                 </span>
                 <span className="flex shrink-0 gap-1">
                   <Button
                     size="sm"
-                    variant="secondary"
+                    variant="outline"
                     disabled={top.length >= 3}
                     onClick={() =>
                       run({
@@ -125,12 +224,20 @@ function TopThree({ onOpen }: { onOpen: (t: Task) => void }) {
         </div>
       ) : null}
       {top.length === 0 ? (
-        <EmptyState
-          title="오늘 꼭 할 3가지를 골라 보세요."
-          description="많이 하는 것보다 중요한 것을 끝내는 하루를 위해."
-        />
+        doneToday.length > 0 ? (
+          <EmptyState
+            icon={<PartyPopper aria-hidden />}
+            title="오늘 고른 일을 모두 끝냈습니다."
+            description="더 할 일이 있으면 다시 고르거나 바로 추가하세요."
+          />
+        ) : (
+          <EmptyState
+            title="오늘 꼭 할 3가지를 골라 보세요."
+            description="많이 하는 것보다 중요한 것을 끝내는 하루를 위해."
+          />
+        )
       ) : (
-        <ol className="divide-y divide-line">
+        <ol className="divide-y divide-border">
           {top.map((t) => (
             <TaskRow
               key={t.id}
@@ -168,13 +275,13 @@ function TopThree({ onOpen }: { onOpen: (t: Task) => void }) {
             onChange={(e) => setQuick(e.target.value)}
             maxLength={200}
           />
-          <Button type="submit" variant="primary" disabled={!quick.trim()}>
+          <Button type="submit" disabled={!quick.trim()}>
             추가
           </Button>
         </form>
       ) : null}
       {doneToday.length > 0 ? (
-        <ul className="mt-2 divide-y divide-line border-t border-line">
+        <ul className="mt-2 divide-y divide-border border-t border-border">
           {doneToday.map((t) => (
             <TaskRow key={t.id} task={t} onOpen={onOpen} showTop={false} />
           ))}
@@ -213,18 +320,18 @@ function TopPicker({ open, onOpenChange }: { open: boolean; onOpenChange: (o: bo
           description="빠른 캡처나 계획 화면에서 할 일을 먼저 추가하세요."
         />
       ) : (
-        <ul className="divide-y divide-line">
+        <ul className="divide-y divide-border">
           {candidates.map((t) => (
             <li key={t.id} className="flex items-center justify-between gap-3 py-2.5">
               <div className="min-w-0">
                 <p className="truncate text-[15px] font-medium">{t.title}</p>
                 {t.dueDate ? (
-                  <p className="text-[12px] text-ink-muted">마감 {relativeDay(t.dueDate, ws.today)}</p>
+                  <p className="text-[12px] text-muted-foreground">마감 {relativeDay(t.dueDate, ws.today)}</p>
                 ) : null}
               </div>
               <Button
                 size="sm"
-                variant="subtle"
+                variant="soft"
                 disabled={remaining <= 0}
                 onClick={async () => {
                   const ok = await run({
@@ -287,7 +394,7 @@ function Schedule({ onOpen }: { onOpen: (t: Task) => void }) {
       <CardHeader
         title={
           <span className="inline-flex items-center gap-1.5">
-            <CalendarDays className="size-4 text-accent" aria-hidden /> 오늘 일정
+            <CalendarDays className="size-4 text-primary" aria-hidden /> 오늘 일정
           </span>
         }
         description={
@@ -296,16 +403,13 @@ function Schedule({ onOpen }: { onOpen: (t: Task) => void }) {
             : "Google 캘린더 미연결 · LifeRoute 일정만 표시"
         }
         action={
-          <Link
-            href="/plans?tab=calendar"
-            className="text-[13px] font-semibold text-accent-strong hover:underline"
-          >
+          <Link href="/plans?tab=calendar" className="text-[13px] font-semibold text-primary hover:underline">
             일정 관리
           </Link>
         }
       />
       {google && google.status !== "connected" && google.status !== "disconnected" ? (
-        <p className="mb-2 rounded-lg bg-warn-soft px-3 py-2 text-[13px] text-warn">
+        <p className="mb-2 rounded-lg bg-warning/10 px-3 py-2 text-[13px] text-warning">
           Google 동기화 상태:{" "}
           {google.status === "reauth_required"
             ? "재로그인 필요"
@@ -326,8 +430,8 @@ function Schedule({ onOpen }: { onOpen: (t: Task) => void }) {
       ) : (
         <ul className="space-y-1.5">
           {items.map((item) => (
-            <li key={item.key} className="flex items-start gap-3 rounded-lg px-2 py-1.5 hover:bg-canvas">
-              <span className="num w-[6.75rem] shrink-0 whitespace-nowrap pt-0.5 text-[13px] font-semibold text-ink-muted">
+            <li key={item.key} className="flex items-start gap-3 rounded-lg px-2 py-1.5 hover:bg-muted">
+              <span className="num w-[6.75rem] shrink-0 whitespace-nowrap pt-0.5 text-[13px] font-semibold text-muted-foreground">
                 {item.time}
               </span>
               <div className="min-w-0 flex-1">
@@ -335,14 +439,14 @@ function Schedule({ onOpen }: { onOpen: (t: Task) => void }) {
                   <button
                     type="button"
                     onClick={() => onOpen(item.task!)}
-                    className="truncate text-left text-[15px] font-medium hover:text-accent-strong"
+                    className="truncate text-left text-[15px] font-medium hover:text-primary"
                   >
                     {item.title}
                   </button>
                 ) : (
                   <p className="truncate text-[15px] font-medium">{item.title}</p>
                 )}
-                {item.sub ? <p className="truncate text-[12px] text-ink-muted">{item.sub}</p> : null}
+                {item.sub ? <p className="truncate text-[12px] text-muted-foreground">{item.sub}</p> : null}
               </div>
               {item.badge ? (
                 <Badge tone={item.badge === "할 일" ? "accent" : "neutral"}>{item.badge}</Badge>
@@ -367,7 +471,7 @@ function Overdue({ onOpen }: { onOpen: (t: Task) => void }) {
   return (
     <Card>
       <CardHeader title="마감 확인" description={`지남 ${overdue.length} · 오늘 마감 ${dueToday.length}`} />
-      <ul className="divide-y divide-line">
+      <ul className="divide-y divide-border">
         {[...overdue, ...dueToday].slice(0, 8).map((t) => (
           <TaskRow key={t.id} task={t} onOpen={onOpen} />
         ))}
@@ -393,10 +497,7 @@ function Routines() {
             : undefined
         }
         action={
-          <Link
-            href="/plans?tab=routines"
-            className="text-[13px] font-semibold text-accent-strong hover:underline"
-          >
+          <Link href="/plans?tab=routines" className="text-[13px] font-semibold text-primary hover:underline">
             관리
           </Link>
         }
@@ -411,11 +512,11 @@ function Routines() {
           {rows.map(({ routine, state }) => (
             <li key={routine.id} className="flex items-center gap-2 rounded-lg px-1 py-1">
               <span
-                className={clsx(
+                className={cn(
                   "flex size-7 shrink-0 items-center justify-center rounded-full text-[12px] font-bold",
-                  state === "done" && "bg-accent text-white",
-                  state === "skipped" && "bg-line text-ink-muted",
-                  state === "unrecorded" && "border border-dashed border-line-strong text-ink-subtle",
+                  state === "done" && "bg-primary text-primary-foreground",
+                  state === "skipped" && "bg-border text-muted-foreground",
+                  state === "unrecorded" && "border border-dashed border-input text-muted-foreground",
                 )}
                 aria-hidden
               >
@@ -429,7 +530,7 @@ function Routines() {
               </span>
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-[15px] font-medium">{routine.title}</span>
-                <span className="text-[12px] text-ink-muted">
+                <span className="text-[12px] text-muted-foreground">
                   {state === "done" ? "완료" : state === "skipped" ? "건너뜀" : "미기록"}
                 </span>
               </span>
@@ -437,7 +538,7 @@ function Routines() {
                 {state !== "done" ? (
                   <Button
                     size="sm"
-                    variant="subtle"
+                    variant="soft"
                     onClick={() =>
                       run({
                         type: "checkin.record",
@@ -500,7 +601,7 @@ function NetWorth() {
         action={
           <Link
             href="/assets"
-            className="inline-flex items-center gap-0.5 text-[13px] font-semibold text-accent-strong hover:underline"
+            className="inline-flex items-center gap-0.5 text-[13px] font-semibold text-primary hover:underline"
           >
             자산 <ArrowRight className="size-3.5" aria-hidden />
           </Link>
@@ -511,46 +612,38 @@ function NetWorth() {
           title="아직 계좌가 없습니다."
           description="자산에서 계좌를 추가하고 오늘 잔액을 기록하세요."
           action={
-            <Link href="/assets" className="text-sm font-semibold text-accent-strong underline">
+            <Link href="/assets" className="text-sm font-semibold text-primary underline">
               계좌 추가
             </Link>
           }
         />
       ) : (
         <>
-          <p className="num text-[28px] font-bold tracking-tight">{formatKrw(nw.netWorthKrw)}</p>
-          <p className="num mt-0.5 text-[13px] text-ink-muted">
+          <p className="num text-[30px] leading-tight font-bold tracking-tight">
+            {formatKrw(nw.netWorthKrw)}
+          </p>
+          <p className="num mt-0.5 text-[13px] text-muted-foreground">
             자산 {formatKrwCompact(nw.includedAssetsKrw)} · 부채 {formatKrwCompact(nw.liabilitiesKrw)} · 유동{" "}
             {formatKrwCompact(nw.liquidAssetsKrw)}
           </p>
-          <div className="mt-4">
-            <div className="flex items-baseline justify-between text-[13px]">
-              <span className="font-semibold">목표 {formatKrwCompact(nw.goal.amountKrw)}</span>
-              <span className="num text-ink-muted">{percent.toFixed(1)}%</span>
+          <div className="mt-4 flex items-center gap-4 rounded-xl bg-muted/60 p-3">
+            <GoalRing percent={percent} />
+            <div className="min-w-0">
+              <p className="text-[13px] font-semibold">
+                목표 {formatKrwCompact(nw.goal.amountKrw)}
+                <span className="num ml-1.5 text-primary">{percent.toFixed(1)}%</span>
+              </p>
+              <p className="mt-1 text-[13px] text-muted-foreground">
+                {nw.goal.status === "achieved"
+                  ? "목표를 달성했습니다."
+                  : nw.goal.status === "overdue"
+                    ? `목표일(${nw.goal.targetDate})이 지났습니다. 설정에서 목표를 다시 정하세요.`
+                    : `${nw.goal.targetDate}까지 ${nw.goal.remainingMonths}개월 · 매달 ${formatKrw(nw.goal.monthlyRequiredKrw ?? "0")} 필요`}
+              </p>
             </div>
-            <div
-              className="mt-1.5 h-2 overflow-hidden rounded-full bg-canvas"
-              role="progressbar"
-              aria-valuenow={Math.round(percent)}
-              aria-valuemin={0}
-              aria-valuemax={100}
-              aria-label="목표 달성률"
-            >
-              <div
-                className="h-full rounded-full bg-accent"
-                style={{ width: `${Math.min(100, percent)}%` }}
-              />
-            </div>
-            <p className="mt-2 text-[13px] text-ink-muted">
-              {nw.goal.status === "achieved"
-                ? "목표를 달성했습니다."
-                : nw.goal.status === "overdue"
-                  ? `목표일(${nw.goal.targetDate})이 지났습니다. 설정에서 목표를 다시 정하세요.`
-                  : `${nw.goal.targetDate}까지 ${nw.goal.remainingMonths}개월 · 매달 ${formatKrw(nw.goal.monthlyRequiredKrw ?? "0")} 필요`}
-            </p>
           </div>
           {nw.data === "incomplete" ? (
-            <p className="mt-3 rounded-lg bg-warn-soft px-3 py-2 text-[13px] text-warn">
+            <p className="mt-3 rounded-lg bg-warning/10 px-3 py-2 text-[13px] text-warning">
               {nw.missingAccountIds.length ? `잔액 없는 계좌 ${nw.missingAccountIds.length}개 ` : ""}
               {nw.staleAccountIds.length ? `오래된 잔액 ${nw.staleAccountIds.length}개 ` : ""}— 합계가 실제와
               다를 수 있습니다.

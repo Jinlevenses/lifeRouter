@@ -1,6 +1,12 @@
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { eq, sql } from "drizzle-orm";
-import { JOB_NAMES, SettingsSchema, type CommandPayload, type CommandResultMap } from "@liferoute/contracts";
+import {
+  JOB_NAMES,
+  SettingsSchema,
+  type CommandPayload,
+  type CommandResultMap,
+  type ConnectionProvider,
+} from "@liferoute/contracts";
 import { apiTokens, connections, guidanceSources, settings } from "../db/schema";
 import { DomainError, notFound, validationFailed, versionConflict } from "../errors";
 import { toApiToken, toConnection, toGuidance, toSettings } from "../mappers";
@@ -39,7 +45,7 @@ export async function settingsUpdate(ctx: CommandContext, p: P<"settings.update"
   return { settings: toSettings(updated!) };
 }
 
-async function connectionFor(ctx: CommandContext, provider: "google" | "toss" | "ai") {
+async function connectionFor(ctx: CommandContext, provider: ConnectionProvider) {
   const [row] = await ctx.tx
     .select()
     .from(connections)
@@ -76,7 +82,9 @@ export async function connectionSyncNow(
 ): R<"connection.syncNow"> {
   const row = await connectionFor(ctx, p.provider);
   const adapterReady =
-    p.provider === "google" ? ctx.integrations.calendar.available : ctx.integrations.balance.available;
+    p.provider === "google"
+      ? ctx.integrations.calendar.available
+      : ctx.integrations.balance[p.provider].available;
   if (!adapterReady || row.status === "disconnected" || row.status === "reauth_required") {
     throw new DomainError(
       "INTEGRATION_DISCONNECTED",
@@ -87,7 +95,7 @@ export async function connectionSyncNow(
   }
   const job = p.provider === "google" ? JOB_NAMES.googleSync : JOB_NAMES.tossSync;
   ctx.afterCommit(async () => {
-    await ctx.jobs.send(job, { reason: "manual" }, { singletonKey: p.provider });
+    await ctx.jobs.send(job, { reason: "manual", provider: p.provider }, { singletonKey: p.provider });
   });
   return { connection: toConnection(row), jobQueued: true };
 }

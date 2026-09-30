@@ -6,10 +6,10 @@ import { Plus } from "lucide-react";
 import type { CalendarEvent, CalendarEventDraft, EventWhen, Proposal } from "@liferoute/contracts";
 import { TIMEZONE } from "@liferoute/contracts";
 import { addDays, dateInZone, formatDateKo } from "@liferoute/core";
-import { Badge, Card, CardHeader, EmptyState } from "@/components/ui/card";
+import { Badge, Card, CardHeader, EmptyState } from "@/components/app/card";
 import { Button } from "@/components/ui/button";
-import { Sheet } from "@/components/ui/dialog";
-import { Checkbox, Field, TextArea, TextInput } from "@/components/ui/fields";
+import { Sheet } from "@/components/app/dialog";
+import { Checkbox, Field, TextArea, TextInput } from "@/components/app/fields";
 import { useWorkspace } from "@/lib/workspace";
 import { seoulInstant, seoulParts, timeLabel } from "@/lib/dates";
 
@@ -59,22 +59,24 @@ export function CalendarTab() {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-[13px] text-ink-muted">
+        <p className="text-[13px] text-muted-foreground">
           Google 캘린더:{" "}
           {connected ? (
             <Badge tone="accent">연결됨</Badge>
           ) : (
             <>
               <Badge>{google?.status === "reauth_required" ? "재로그인 필요" : "미연결"}</Badge>{" "}
-              <Link href="/settings#connections" className="font-semibold text-accent-strong underline">
+              <Link href="/settings#connections" className="font-semibold text-primary underline">
                 연결하기
               </Link>
             </>
           )}
         </p>
         <div className="flex gap-2">
-          <Button onClick={() => setEditor({ event: null, mode: "propose" })}>Google에 일정 제안</Button>
-          <Button variant="primary" onClick={() => setEditor({ event: null, mode: "local" })}>
+          <Button variant="outline" onClick={() => setEditor({ event: null, mode: "propose" })}>
+            Google에 일정 제안
+          </Button>
+          <Button onClick={() => setEditor({ event: null, mode: "local" })}>
             <Plus className="size-4" aria-hidden /> 일정
           </Button>
         </div>
@@ -83,7 +85,7 @@ export function CalendarTab() {
       {openProposals.length > 0 ? (
         <Card>
           <CardHeader title="Google 변경 제안" description="승인해야만 Google 캘린더에 반영됩니다." />
-          <ul className="divide-y divide-line">
+          <ul className="divide-y divide-border">
             {openProposals.map((p) => (
               <li key={p.id} className="flex flex-wrap items-center gap-2 py-2.5">
                 <div className="min-w-0 flex-1">
@@ -96,7 +98,7 @@ export function CalendarTab() {
                     :{" "}
                     {p.draft?.title ?? ws.calendarEvents.find((e) => e.id === p.calendarEventId)?.title ?? ""}
                   </p>
-                  <p className="text-[12px] text-ink-muted">
+                  <p className="text-[12px] text-muted-foreground">
                     {PROPOSAL_STATUS[p.status]}
                     {p.error ? ` · ${p.error}` : ""}
                   </p>
@@ -105,7 +107,7 @@ export function CalendarTab() {
                   <span className="flex gap-1">
                     <Button
                       size="sm"
-                      variant="primary"
+
                       disabled={!connected}
                       title={connected ? undefined : "Google 연결 후 승인할 수 있습니다"}
                       onClick={() =>
@@ -150,7 +152,7 @@ export function CalendarTab() {
           <div className="space-y-4">
             {byDay.map(([day, events]) => (
               <section key={day} aria-label={formatDateKo(day)}>
-                <h3 className="mb-1 text-[13px] font-semibold text-ink-muted">
+                <h3 className="mb-1 text-[13px] font-semibold text-muted-foreground">
                   {day === ws.today ? "오늘" : formatDateKo(day)}
                 </h3>
                 <ul className="space-y-1">
@@ -165,10 +167,10 @@ export function CalendarTab() {
                               ? setEditor({ event: e, mode: "propose" })
                               : undefined
                         }
-                        className="flex w-full items-center gap-3 rounded-lg px-2 py-1.5 text-left hover:bg-canvas disabled:cursor-default"
+                        className="flex w-full items-center gap-3 rounded-lg px-2 py-1.5 text-left hover:bg-muted disabled:cursor-default"
                         disabled={e.source === "google" && !e.managed}
                       >
-                        <span className="num w-[6.75rem] shrink-0 whitespace-nowrap text-[13px] font-semibold text-ink-muted">
+                        <span className="num w-[6.75rem] shrink-0 whitespace-nowrap text-[13px] font-semibold text-muted-foreground">
                           {e.when.allDay ? "종일" : `${timeLabel(e.when.start)}–${timeLabel(e.when.end)}`}
                         </span>
                         <span className="min-w-0 flex-1 truncate text-[15px]">{e.title}</span>
@@ -305,14 +307,14 @@ function EventEditor({
       footer={
         <>
           {event ? (
-            <Button variant="ghost" className="mr-auto text-danger" onClick={remove}>
+            <Button variant="ghost" className="mr-auto text-destructive" onClick={remove}>
               {mode === "local" ? "삭제" : "삭제 제안"}
             </Button>
           ) : null}
           <Button variant="ghost" onClick={onClose}>
             닫기
           </Button>
-          <Button variant="primary" onClick={save} disabled={invalid}>
+          <Button onClick={save} disabled={invalid}>
             {mode === "local" ? "저장" : "제안 만들기"}
           </Button>
         </>

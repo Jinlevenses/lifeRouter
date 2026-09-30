@@ -8,6 +8,7 @@
 | DOC-001 | 원장 정정, ADR-004~012 | DR-001 | 문서 검토 | done | 원장의 날짜(2026-09-29 KST)와 Mac 환경 기록은 정정이 아니라 유지(ADR-010) |
 | DOC-002 | AGENTS.md | DR-001 | 문서 검토 | done | |
 | DOC-003 | REGISTRY + 추적성 다중 테스트 ID | DR-001 | 문서 검토 | done | |
+| DOC-004 | 소유자 답변 Q-1..Q-8 반영, ADR-013~016 | DR-001 | 문서 검토 | done | 2026-09-30 |
 | BUILD-001 | pnpm monorepo, strict TS, eslint, vitest, playwright, `pnpm verify` | NFR-003 | BUILD-001 | done | |
 | CONTRACT-001 | `packages/contracts/index.ts` 채택 + 계약 테스트 | DR-001, NFR-002 | TYPE-CONTRACT-001 | done | brand 대신 경계 검증(ADR-008) |
 | CORE-001 | Money(decimal, HALF_UP/CEIL) | NFR-002 | UNIT-MONEY-001 | done | |
@@ -50,11 +51,14 @@
 | UI-009 | 설정 | NFR-001 | E2E-CAPTURE-001(토큰) | partial | |
 | UI-010 | 컬렉션 | FR-006 | (수동 스크린샷) | partial | E2E 없음 |
 | UI-011 | 레이아웃·접근성 자동 점검 | A11Y-001 | E2E-WEB-001 | done | VoiceOver는 owner |
+| UI-012 | shadcn/ui 도입(공식 CLI, 토큰·Sidebar·Dialog/Drawer·Field·Sonner) | NFR-003 | E2E 전체, BUILD-001 | done | ADR-016 |
+| UI-013 | Magic UI 강조(NumberTicker·BorderBeam·Confetti·목표 링·BlurFade·로그인) | FR-001, FR-005 | E2E-TODAY-001, E2E-FIN-001 | done | 금액은 애니메이션 안 함 |
 | INT-001 | Google OAuth + 읽기 동기화 | FR-008 | INT-GCAL-001(가짜) | done / owner | 실제 계정 연결은 owner |
 | INT-002 | 승인 → managed 쓰기 | FR-008 | INT-GCAL-002(가짜) | done / owner | |
-| INT-003 | Toss 어댑터 | FR-005 | INT-TOSS-001 | planned | Q-2 확인 후 |
+| INT-003 | Toss 어댑터 (토스뱅크·토스증권 분리, ADR-014) | FR-005 | INT-TOSS-001 | partial | 연결 2개·마이그레이션 0001 완료. 토스증권 Open API 문서 확인 후 잔고 조회 구현, 토스뱅크는 수동 |
 | INT-004 | OCR 어댑터 | FR-007 | INT-OCR-001 | planned | 현재 수동 입력 |
-| INT-005 | AI 어댑터 + 원장 | FR-009 | INT-AI-001(가짜) | done / owner | 실제 청구 대조는 owner |
+| INT-005 | AI 어댑터 + 원장 (OpenAI GPT 기본, ADR-013) | FR-009 | INT-AI-001(가짜) | done / owner | 실제 OpenAI 호출·청구 대조는 owner |
+| INT-007 | Notion Calendar 연동 (Google 경유, ADR-015) | FR-008 | 문서·설정 안내 | done / owner | 실제 Notion Calendar 표시 확인은 owner |
 | INT-006 | iPhone 단축어 레시피 | FR-007 | E2E-CAPTURE-002 | owner | 설정 화면에 안내 있음 |
 | OPS-001 | 내보내기 zip | FR-010 | OPS-EXPORT-001 | done | |
 | OPS-002 | 암호화 백업·보존·catch-up | FR-010 | OPS-BACKUP-001 | done | |

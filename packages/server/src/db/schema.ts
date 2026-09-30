@@ -178,7 +178,7 @@ export const balanceSnapshots = pgTable(
     amountKrw: money("amount_krw").notNull(),
     estimated: boolean("estimated").notNull().default(false),
     reason: text("reason"),
-    source: text("source").$type<"manual" | "toss">().notNull().default("manual"),
+    source: text("source").$type<"manual" | "toss_bank" | "toss_securities">().notNull().default("manual"),
     createdAt: audit.createdAt,
   },
   (t) => [uniqueIndex("snapshots_account_asof_uq").on(t.accountId, t.asOf)],
@@ -265,7 +265,7 @@ export const collectionRecords = pgTable(
 
 export const connections = pgTable("connections", {
   id: uuid("id").primaryKey(),
-  provider: text("provider").$type<"google" | "toss" | "ai">().notNull().unique(),
+  provider: text("provider").$type<"google" | "toss_bank" | "toss_securities" | "ai">().notNull().unique(),
   status: text("status")
     .$type<"disconnected" | "connected" | "reauth_required" | "stale" | "failed">()
     .notNull()
@@ -418,7 +418,7 @@ export const analyses = pgTable("analyses", {
     .default("previewed"),
   estimate: jsonb("estimate").$type<CostEstimate>(),
   consent: jsonb("consent").$type<{ givenAt: string; estimateKrw: string }>(),
-  provider: text("provider").$type<"disconnected" | "anthropic">().notNull(),
+  provider: text("provider").$type<"disconnected" | "openai" | "anthropic">().notNull(),
   model: text("model"),
   resultText: text("result_text"),
   error: text("error"),
@@ -435,7 +435,7 @@ export const aiUsage = pgTable(
     id: uuid("id").primaryKey(),
     analysisId: uuid("analysis_id").references(() => analyses.id),
     monthKey: text("month_key").notNull(),
-    provider: text("provider").$type<"disconnected" | "anthropic">().notNull(),
+    provider: text("provider").$type<"disconnected" | "openai" | "anthropic">().notNull(),
     model: text("model").notNull(),
     inputTokens: integer("input_tokens").notNull(),
     outputTokens: integer("output_tokens").notNull(),

@@ -5,10 +5,10 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Plus } from "lucide-react";
 import type { CollectionProperty, CollectionView } from "@liferoute/contracts";
-import { EmptyState, PageHeader } from "@/components/ui/card";
+import { EmptyState, PageHeader } from "@/components/app/card";
 import { Button } from "@/components/ui/button";
-import { Sheet } from "@/components/ui/dialog";
-import { Field, Select, TextInput } from "@/components/ui/fields";
+import { Sheet } from "@/components/app/dialog";
+import { Field, Select, TextInput } from "@/components/app/fields";
 import { useWorkspace } from "@/lib/workspace";
 
 const TEMPLATES: Record<
@@ -196,7 +196,7 @@ export default function CollectionsPage() {
         title="컬렉션"
         description="직접 정한 속성으로 목록을 관리합니다 (표·보드·달력)."
         action={
-          <Button variant="primary" onClick={() => setOpen(true)}>
+          <Button onClick={() => setOpen(true)}>
             <Plus className="size-4" aria-hidden /> 새 컬렉션
           </Button>
         }
@@ -210,12 +210,15 @@ export default function CollectionsPage() {
         <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {ws.collections.map((c) => (
             <li key={c.id}>
-              <Link href={`/collections/${c.id}`} className="card block p-4 hover:border-line-strong">
+              <Link
+                href={`/collections/${c.id}`}
+                className="block rounded-xl border bg-card p-4 shadow-xs transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md"
+              >
                 <p className="text-[15px] font-bold">
                   {c.icon ? `${c.icon} ` : ""}
                   {c.name}
                 </p>
-                <p className="mt-1 text-[13px] text-ink-muted">
+                <p className="mt-1 text-[13px] text-muted-foreground">
                   {ws.collectionRecords.filter((r) => r.collectionId === c.id).length}개 · 속성{" "}
                   {c.properties.length}개
                 </p>
@@ -233,9 +236,7 @@ export default function CollectionsPage() {
             <Button variant="ghost" onClick={() => setOpen(false)}>
               닫기
             </Button>
-            <Button variant="primary" onClick={create}>
-              만들기
-            </Button>
+            <Button onClick={create}>만들기</Button>
           </>
         }
       >

@@ -20,7 +20,7 @@ import {
   Strikethrough,
   Trash2,
 } from "lucide-react";
-import clsx from "clsx";
+import { cn } from "@/lib/utils";
 import type {
   DocumentNode,
   LinkTargetType,
@@ -30,10 +30,10 @@ import type {
 } from "@liferoute/contracts";
 import { normalizeTags } from "@liferoute/core";
 import { Button } from "@/components/ui/button";
-import { Badge, Card, CardHeader } from "@/components/ui/card";
-import { Sheet } from "@/components/ui/dialog";
-import { Select, TextInput } from "@/components/ui/fields";
-import { useToast } from "@/components/ui/toast";
+import { Badge, Card, CardHeader } from "@/components/app/card";
+import { Sheet } from "@/components/app/dialog";
+import { Select, TextInput } from "@/components/app/fields";
+import { useToast } from "@/components/app/toast";
 import { ApiRequestError, fetchNote, fetchRevision, postCommand, uploadAttachment } from "@/lib/api-client";
 import { useWorkspace } from "@/lib/workspace";
 import { instantLabel } from "@/lib/dates";
@@ -257,10 +257,10 @@ export function NoteEditor({ initial }: { initial: NoteDetail }) {
     <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_280px]">
       <div className="min-w-0 space-y-3">
         <div className="flex flex-wrap items-center gap-2">
-          <Link href="/notes" className="text-sm font-semibold text-ink-muted hover:text-ink">
+          <Link href="/notes" className="text-sm font-semibold text-muted-foreground hover:text-foreground">
             ← 노트
           </Link>
-          <span className="ml-auto text-[13px] text-ink-muted" role="status" aria-live="polite">
+          <span className="ml-auto text-[13px] text-muted-foreground" role="status" aria-live="polite">
             {state === "saved"
               ? "저장됨"
               : state === "dirty"
@@ -273,7 +273,7 @@ export function NoteEditor({ initial }: { initial: NoteDetail }) {
           </span>
           <Button
             size="sm"
-            variant="primary"
+
             onClick={() => save()}
             disabled={state === "saving" || state === "conflict"}
           >
@@ -282,18 +282,18 @@ export function NoteEditor({ initial }: { initial: NoteDetail }) {
         </div>
 
         {conflict ? (
-          <div role="alert" className="rounded-xl border border-warn/40 bg-warn-soft p-3 text-[13px]">
-            <p className="font-semibold text-warn">
+          <div role="alert" className="rounded-xl border border-warning/40 bg-warning/10 p-3 text-[13px]">
+            <p className="font-semibold text-warning">
               다른 곳에서 먼저 저장된 버전(v{conflict.currentVersion})이 있습니다.
             </p>
-            <p className="mt-0.5 text-ink-muted">
+            <p className="mt-0.5 text-muted-foreground">
               지금 화면의 내용은 아직 저장되지 않았습니다. 어느 쪽을 남길지 고르세요.
             </p>
             <div className="mt-2 flex flex-wrap gap-2">
-              <Button size="sm" variant="secondary" onClick={loadLatest}>
+              <Button size="sm" variant="outline" onClick={loadLatest}>
                 최신 버전 불러오기 (내 변경 버림)
               </Button>
-              <Button size="sm" variant="primary" onClick={() => save(conflict.currentVersion)}>
+              <Button size="sm" onClick={() => save(conflict.currentVersion)}>
                 내 변경으로 저장 (이전 것은 기록에 남음)
               </Button>
             </div>
@@ -301,7 +301,7 @@ export function NoteEditor({ initial }: { initial: NoteDetail }) {
         ) : null}
 
         <Card className="!p-0">
-          <div className="border-b border-line p-4 sm:p-5">
+          <div className="border-b border-border p-4 sm:p-5">
             <TextInput
               aria-label="제목"
               placeholder="제목"
@@ -339,7 +339,9 @@ export function NoteEditor({ initial }: { initial: NoteDetail }) {
           <CardHeader title="정보" as="h2" />
           <div className="space-y-3 text-sm">
             <label className="block">
-              <span className="label">태그 (쉼표로 구분)</span>
+              <span className="mb-1.5 block text-[13px] font-semibold text-muted-foreground">
+                태그 (쉼표로 구분)
+              </span>
               <TextInput
                 value={tags}
                 onChange={(e) => {
@@ -350,7 +352,7 @@ export function NoteEditor({ initial }: { initial: NoteDetail }) {
               />
             </label>
             <label className="block">
-              <span className="label">프로젝트</span>
+              <span className="mb-1.5 block text-[13px] font-semibold text-muted-foreground">프로젝트</span>
               <Select
                 value={projectId}
                 onChange={(e) => {
@@ -367,7 +369,7 @@ export function NoteEditor({ initial }: { initial: NoteDetail }) {
               </Select>
             </label>
             <label className="block">
-              <span className="label">목표</span>
+              <span className="mb-1.5 block text-[13px] font-semibold text-muted-foreground">목표</span>
               <Select
                 value={goalId}
                 onChange={(e) => {
@@ -388,17 +390,14 @@ export function NoteEditor({ initial }: { initial: NoteDetail }) {
         <Card>
           <CardHeader title="이 노트를 가리키는 노트" description={`${backlinkTitles.length}개`} as="h2" />
           {backlinkTitles.length === 0 ? (
-            <p className="text-[13px] text-ink-muted">
+            <p className="text-[13px] text-muted-foreground">
               아직 없습니다. 다른 노트에서 ‘링크’로 이 노트를 연결해 보세요.
             </p>
           ) : (
             <ul className="space-y-1">
               {backlinkTitles.map((b) => (
                 <li key={b.id}>
-                  <Link
-                    href={`/notes/${b.id}`}
-                    className="text-sm font-medium text-accent-strong hover:underline"
-                  >
+                  <Link href={`/notes/${b.id}`} className="text-sm font-medium text-primary hover:underline">
                     {b.title}
                   </Link>
                 </li>
@@ -406,33 +405,35 @@ export function NoteEditor({ initial }: { initial: NoteDetail }) {
             </ul>
           )}
           {detail.note.links.length ? (
-            <p className="mt-2 text-[12px] text-ink-muted">이 노트의 링크 {detail.note.links.length}개</p>
+            <p className="mt-2 text-[12px] text-muted-foreground">
+              이 노트의 링크 {detail.note.links.length}개
+            </p>
           ) : null}
           {mentions.map((m) => (
             <Link
               key={m.href}
               href={m.href}
-              className="mt-1 block text-[12px] text-ink-muted hover:underline"
+              className="mt-1 block text-[12px] text-muted-foreground hover:underline"
             >
               {m.label}
             </Link>
           ))}
         </Card>
         <div className="flex flex-wrap gap-2">
-          <Button size="sm" onClick={() => setHistoryOpen(true)}>
+          <Button variant="outline" size="sm" onClick={() => setHistoryOpen(true)}>
             <History className="size-4" aria-hidden /> 이전 버전 {detail.revisions.length}
           </Button>
           <a
             href={`/api/v1/notes/${detail.note.id}/export.md`}
-            className="inline-flex h-8 items-center gap-1.5 rounded-[10px] border border-line-strong bg-surface px-2.5 text-[13px] font-semibold hover:bg-canvas"
+            className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-input bg-card px-2.5 text-[13px] font-semibold hover:bg-muted"
           >
             <Download className="size-4" aria-hidden /> Markdown
           </a>
-          <Button size="sm" variant="ghost" className="text-danger" onClick={remove}>
+          <Button size="sm" variant="ghost" className="text-destructive" onClick={remove}>
             <Trash2 className="size-4" aria-hidden /> 삭제
           </Button>
         </div>
-        <p className="text-[12px] text-ink-subtle">
+        <p className="text-[12px] text-muted-foreground">
           v{detail.note.version} · {instantLabel(detail.note.updatedAt, ws.today)} 수정
         </p>
       </aside>
@@ -496,7 +497,7 @@ function Toolbar({
   onLink: () => void;
   onImage: () => void;
 }) {
-  if (!editor) return <div className="h-11 border-b border-line" />;
+  if (!editor) return <div className="h-11 border-b border-border" />;
   const item = (label: string, icon: React.ReactNode, active: boolean, action: () => void) => (
     <button
       type="button"
@@ -504,9 +505,9 @@ function Toolbar({
       title={label}
       aria-pressed={active}
       onClick={action}
-      className={clsx(
+      className={cn(
         "flex size-9 items-center justify-center rounded-lg",
-        active ? "bg-accent-soft text-accent-strong" : "text-ink-muted hover:bg-canvas hover:text-ink",
+        active ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted hover:text-foreground",
       )}
     >
       {icon}
@@ -514,7 +515,7 @@ function Toolbar({
   );
   const c = () => editor.chain().focus();
   return (
-    <div role="toolbar" aria-label="서식" className="flex flex-wrap gap-0.5 border-b border-line px-2 py-1">
+    <div role="toolbar" aria-label="서식" className="flex flex-wrap gap-0.5 border-b border-border px-2 py-1">
       {item("소제목", <Heading2 className="size-4" />, editor.isActive("heading", { level: 2 }), () =>
         c().toggleHeading({ level: 2 }).run(),
       )}
@@ -538,7 +539,7 @@ function Toolbar({
       {item("인용", <Quote className="size-4" />, editor.isActive("blockquote"), () =>
         c().toggleBlockquote().run(),
       )}
-      <span className="mx-1 w-px self-stretch bg-line" aria-hidden />
+      <span className="mx-1 w-px self-stretch bg-border" aria-hidden />
       {item("노트·프로젝트 링크", <Link2 className="size-4" />, false, onLink)}
       {item("이미지", <ImagePlus className="size-4" />, false, onImage)}
     </div>
@@ -590,13 +591,13 @@ function LinkPicker({
         onChange={(e) => setQuery(e.target.value)}
         className="mb-3"
       />
-      <ul className="divide-y divide-line">
+      <ul className="divide-y divide-border">
         {options.map((o) => (
           <li key={`${o.type}:${o.id}`}>
             <button
               type="button"
               onClick={() => onPick(o.type, o.id, o.label)}
-              className="flex w-full items-center gap-2 py-2.5 text-left hover:text-accent-strong"
+              className="flex w-full items-center gap-2 py-2.5 text-left hover:text-primary"
             >
               <Badge>{o.kind}</Badge>
               <span className="truncate text-[15px]">{o.label}</span>
@@ -630,7 +631,7 @@ function RevisionSheet({
       wide
     >
       {detail.revisions.length === 0 ? (
-        <p className="text-sm text-ink-muted">아직 이전 버전이 없습니다.</p>
+        <p className="text-sm text-muted-foreground">아직 이전 버전이 없습니다.</p>
       ) : (
         <div className="grid gap-3 sm:grid-cols-[200px_minmax(0,1fr)]">
           <ul className="space-y-1">
@@ -639,30 +640,32 @@ function RevisionSheet({
                 <button
                   type="button"
                   onClick={async () => setPreview(await fetchRevision(detail.note.id, r.id))}
-                  className={clsx(
-                    "w-full rounded-lg px-2.5 py-2 text-left text-[13px] hover:bg-canvas",
-                    preview?.id === r.id && "bg-accent-soft",
+                  className={cn(
+                    "w-full rounded-lg px-2.5 py-2 text-left text-[13px] hover:bg-muted",
+                    preview?.id === r.id && "bg-primary/10",
                   )}
                 >
                   <span className="font-semibold">v{r.version}</span> · {instantLabel(r.savedAt, ws.today)}
-                  <span className="block truncate text-ink-muted">{r.title || "제목 없음"}</span>
+                  <span className="block truncate text-muted-foreground">{r.title || "제목 없음"}</span>
                 </button>
               </li>
             ))}
           </ul>
-          <div className="min-w-0 rounded-xl bg-canvas p-3">
+          <div className="min-w-0 rounded-xl bg-muted p-3">
             {preview ? (
               <>
                 <p className="font-bold">{preview.title || "제목 없음"}</p>
-                <pre className="mt-2 max-h-80 overflow-auto whitespace-pre-wrap font-sans text-[13px] text-ink-muted">
+                <pre className="mt-2 max-h-80 overflow-auto whitespace-pre-wrap font-sans text-[13px] text-muted-foreground">
                   {preview.text || "(내용 없음)"}
                 </pre>
-                <Button size="sm" variant="primary" className="mt-3" onClick={() => onRestore(preview.id)}>
+                <Button size="sm" className="mt-3" onClick={() => onRestore(preview.id)}>
                   이 버전으로 되돌리기
                 </Button>
               </>
             ) : (
-              <p className="text-[13px] text-ink-muted">왼쪽에서 버전을 고르면 내용을 볼 수 있습니다.</p>
+              <p className="text-[13px] text-muted-foreground">
+                왼쪽에서 버전을 고르면 내용을 볼 수 있습니다.
+              </p>
             )}
           </div>
         </div>

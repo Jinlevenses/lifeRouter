@@ -15,17 +15,17 @@ LifeRoute는 한국의 단일 소유자가 Mac+iPhone에서 오늘의 상위 3�
 | FR-005 | 순자산은 포함 자산-모든 부채이며 liquid subtotal을 보인다 | UNIT-FIN-001, INT-FIN-001, E2E-FIN-001 | 자동 검증 |
 | FR-006 | 노트는 Tiptap JSON 이력·Markdown 내보내기·태그·backlink를 지원한다 | UNIT-NOTE-001, UNIT-COLLECTION-001, INT-NOTE-001, INT-COLLECTION-001, E2E-NOTE-001 | 자동 검증 |
 | FR-007 | 공유/텍스트/이미지/영수증을 inbox로 받고 OCR 확인 뒤 확정한다 | UNIT-RECEIPT-001, INT-INBOX-001, INT-CAPTURE-001, E2E-CAPTURE-001 | 자동 검증(OCR 엔진 미구현, 실물 iPhone 수동 미검증) |
-| FR-008 | Google 읽기와 승인된 managed calendar 쓰기만 수행한다 | INT-GCAL-001, INT-GCAL-002(가짜 제공자), INT-CAL-001 | 자동 검증(실제 Google 자격 수동 미검증) |
-| FR-009 | 주간/월간 검토는 결정론적이며 AI는 동의된 원문만 분석한다 | UNIT-REVIEW-001, UNIT-AI-BUDGET-001, INT-REVIEW-001, INT-AI-CONSENT-001, INT-AI-001 | 자동 검증(실제 AI 청구 수동 미검증) |
+| FR-008 | Google 읽기와 승인된 managed calendar 쓰기만 수행한다. Notion Calendar는 같은 Google 캘린더로 연동한다 | INT-GCAL-001, INT-GCAL-002(가짜 제공자), INT-CAL-001 | 자동 검증(실제 Google·Notion Calendar 수동 미검증) |
+| FR-009 | 주간/월간 검토는 결정론적이며 AI는 동의된 원문만 분석한다(기본 OpenAI GPT) | UNIT-REVIEW-001, UNIT-AI-BUDGET-001, INT-REVIEW-001, INT-AI-CONSENT-001, INT-AI-001 | 자동 검증(실제 OpenAI 호출·청구 수동 미검증) |
 | FR-010 | 매일 암호화 백업, 보존과 restore drill을 제공한다 | OPS-BACKUP-001, OPS-RESTORE-001, OPS-EXPORT-001 | 자동 검증(외부 매체·실제 drill 수동 미검증) |
 | NFR-001 | local-first, 비밀/데이터 저장소 외부, HTTPS 사설 접근 | SEC-001, SEC-ATTACH-001, SEC-LOGIN-001, INT-AUTH-001 | 자동 검증(Tailscale HTTPS 수동 미검증) |
 | NFR-002 | 금액은 decimal string, 동시 수정은 version conflict, 쓰기는 idempotent | UNIT-MONEY-001, INT-API-001, INT-API-002 | 자동 검증 |
-| NFR-003 | TypeScript strict, Next 16/React/Tailwind/Radix/PostgreSQL/Drizzle/Better Auth/pg-boss | BUILD-001 (`pnpm verify`) | 자동 검증 |
+| NFR-003 | TypeScript strict, Next 16/React/Tailwind/shadcn/ui(Radix)/PostgreSQL/Drizzle/Better Auth/pg-boss | BUILD-001 (`pnpm verify`) | 자동 검증 |
 | DR-001 | API contract는 `packages/contracts/index.ts`가 기준이다 | TYPE-CONTRACT-001 | 자동 검증 |
 | A11Y-001 | 키보드, 명도, 라벨, iPhone VoiceOver | E2E-WEB-001(자동 부분) | 자동 부분만 검증, VoiceOver 수동 미검증 |
 
 ### 수용 기준
-순자산 목표는 100,000,000 KRW/36개월이고 예금·연금 평가액을 포함하며 국민연금 미래 수급권은 제외한다. 계좌 잔액은 공식 API 전까지 수동 snapshot이다. Toss는 공식 read-only API, 키/IP 조건 충족 시에만 사용한다. Notion Calendar는 Google 연결을 통해 읽는다(별도 구현 없음).
+순자산 목표는 100,000,000 KRW/36개월(시작일 = 처음 실행한 날, Q-1)이고 예금·연금 평가액을 포함하며 국민연금 미래 수급권은 제외한다. 계좌 잔액은 공식 API 전까지 수동 snapshot이다. Toss는 토스뱅크 잔액과 토스증권 잔고를 모두 대상으로 하되(Q-2) 공식 read-only API, 키/IP 조건 충족 시에만 사용한다. Notion Calendar는 Google 연결을 통해 연동한다(ADR-015). 웹(데스크톱) 사용을 우선으로 설계하고 iPhone에서는 캡처 우선 동선을 둔다(Q-8).
 
 ## ADR
 ### ADR-001: local-first PostgreSQL
@@ -64,6 +64,18 @@ LifeRoute는 한국의 단일 소유자가 Mac+iPhone에서 오늘의 상위 3�
 ### ADR-012: Google 최소 scope
 결정: `calendar.readonly` + `calendar.app.created`. 앱이 만든 ‘LifeRoute’ 캘린더에만 API 수준에서 쓸 수 있다. 쓰기는 proposal id를 로컬 이벤트 id로 써서 재시도해도 중복되지 않으며 etag 불일치는 덮어쓰지 않고 실패로 남긴다. scope 이름·정책은 연결 직전 Google 문서로 재확인한다.
 
+### ADR-013: AI 제공자 OpenAI GPT (Q-4)
+결정: 계약의 `AiProvider`를 `disconnected|openai|anthropic`으로 넓히고, 소유자 선택에 따라 기본은 꺼짐, 켜면 OpenAI GPT를 쓴다. 공식 `openai` SDK의 Responses API로 호출하고 `max_output_tokens`를 비용 상한, `store: false`로 OpenAI 쪽 보관을 끈다. 모델 이름과 단가(원/100만 토큰)는 소유자가 설정에서 입력한다(가격을 추정해 채우지 않음). Anthropic 어댑터는 선택지로 남긴다. 결과: 제공자별 어댑터 맵(`integrations.ai.openai|anthropic`), 사용 원장에 실제 제공자 기록(INT-AI-001).
+
+### ADR-014: Toss = 토스뱅크 잔액 + 토스증권 잔고 (Q-2)
+결정: 연결 제공자와 snapshot 출처를 `toss_bank`, `toss_securities`로 나눈다(기존 `toss` 행은 마이그레이션 0001에서 `toss_bank`로 바뀜). 토스증권은 공식 Open API(WTS에서 client_id·secret 발급, 허용 IP 등록, 계좌·잔고 조회 제공)가 있어 읽기 전용 잔고 조회만 붙일 예정이고, 토스뱅크는 개인용 공식 잔액 API가 확인될 때까지 수동 snapshot이다. 두 어댑터는 문서·자격을 확인하기 전까지 Disconnected이며, 실패해도 기존 잔액을 덮어쓰지 않는다.
+
+### ADR-015: Notion Calendar는 Google 캘린더로 연동 (Q-3)
+결정: Notion Calendar는 공개 API가 없으므로 별도 연동을 만들지 않는다. LifeRoute가 승인 후 쓰는 ‘LifeRoute’ Google 캘린더를 Notion Calendar에 같은 Google 계정으로 추가해 보고, Notion Calendar에서 Google 캘린더에 만든 일정은 LifeRoute의 Google 읽기 동기화로 들어온다. Notion 데이터베이스 날짜 속성은 Google에 없으므로 범위 밖이다(필요하면 Notion API 연동을 별도 변경으로).
+
+### ADR-016: UI 키트 shadcn/ui + Magic UI
+결정: 화면 기본 부품은 shadcn/ui(new-york-v4, Radix, Tailwind 4)를 공식 CLI(`shadcn add`)로 `apps/web/src/components/ui`에 복사해 쓰고, 눈에 띄는 부분만 Magic UI(NumberTicker, AnimatedCircularProgressBar, BorderBeam, BlurFade, AuroraText, DotPattern, Confetti)를 같은 CLI로 가져온다. 앱 전용 조합은 `components/app`에 둔다. 색은 shadcn 변수에 제품 토큰(#F7F8FA, #18212B, #0F766E)을 넣는다. 금액은 애니메이션하지 않는다(NumberTicker는 개수·비율만). 움직임은 OS ‘동작 줄이기’를 따른다. 로컬 수정은 주석으로 표시한다(Button 기본 `type="button"`과 `soft` 변형, Toaster 밝은 테마 고정, NativeSelect `wrapperClassName`). Aceternity UI는 공개 저장소가 없고 이 개발 환경에서 사이트 접근이 막혀 쓰지 않았다.
+
 ## 상태와 검증 한계
 단계 0–5의 자동 검증 결과는 `docs/IMPLEMENTATION.md`에 명령과 함께 기록한다. 2주 사용성 시험, 실물 iPhone/VoiceOver, 외부 자격증명, 원격 기기 등록, 백업 매체·복구 drill은 수행되지 않았으며 자동 테스트로 대신할 수 없다.
 
@@ -75,14 +87,14 @@ LifeRoute는 한국의 단일 소유자가 Mac+iPhone에서 오늘의 상위 3�
 
 설계 검토 전문(공백 43건, 결정 57건, 소유자 질문 8건)은 [plan-review-2026-09-28.md](plan-review-2026-09-28.md)에 있다.
 
-## 소유자만 답할 수 있는 질문 (현재 적용 중인 기본값)
-| # | 질문 | 기본값 |
-|---|---|---|
-| Q-1 | 36개월 목표 시작일 | 최초 실행일(설정에서 변경 가능) |
-| Q-2 | Toss는 토스뱅크 잔액인가 토스증권 잔고인가, 공식 API 계약을 받을 것인가 | 인터페이스만, 수동 잔액 |
-| Q-3 | Google 연결 의사, 별도 ‘LifeRoute’ 캘린더 사용 | 별도 캘린더 |
-| Q-4 | AI 제공자·모델·단가 | 꺼짐, 켜면 claude-opus-5 기본(단가 자동 채움, 수정 가능) |
-| Q-5 | 백업 저장 위치(외장 SSD/NAS)와 키 보관 | `~/LifeRouteData/backups`, 키는 `.env.local` |
-| Q-6 | 연금 계정 범위와 갱신 주기 | category=pension 수동 스냅샷, 35일 지나면 ‘오래됨’ |
-| Q-7 | HEIC 원본 보관 | 변환 없이 저장 |
-| Q-8 | iPhone 기본 행동 | 캡처 우선 |
+## 소유자 답변 (2026-09-30)
+| # | 질문 | 답변 | 반영 |
+|---|---|---|---|
+| Q-1 | 36개월 목표 시작일 | 처음 실행한 날 | 기본값 유지(설정에서 변경 가능) |
+| Q-2 | Toss 대상 | 토스뱅크 잔액과 토스증권 잔고 둘 다 | ADR-014, 연결 2개로 분리, 계좌 기관 추천값 |
+| Q-3 | Google 연결·캘린더 | 연결 희망, 쓰기는 별도 ‘LifeRoute’ 캘린더만, Notion Calendar 연동도 희망 | ADR-012·015, 설정 > 연결에 Notion Calendar 안내 |
+| Q-4 | AI 제공자·모델·단가 | 꺼짐, 사용 시 GPT | ADR-013, OpenAI 어댑터·설정 |
+| Q-5 | 백업 위치·키 | `~/LifeRouteData/backups`, 키는 `.env.local` | 기본값 유지 |
+| Q-6 | 연금 계정 범위·갱신 | 직접 입력, 35일 지나면 ‘오래됨’ | 기본값 유지 |
+| Q-7 | HEIC 원본 | 변환 없이 저장 | 기본값 유지 |
+| Q-8 | iPhone 기본 행동 | 캡처 우선, 그러나 웹 사용을 우선으로 | 데스크톱 웹 우선 설계, iPhone 하단 캡처 버튼 유지 |

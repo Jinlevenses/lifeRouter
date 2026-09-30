@@ -2,12 +2,12 @@
 
 import { useMemo, useState } from "react";
 import { Plus, Star } from "lucide-react";
-import clsx from "clsx";
 import type { Task } from "@liferoute/contracts";
 import { addDays } from "@liferoute/core";
-import { Card, CardHeader, EmptyState } from "@/components/ui/card";
+import { Card, CardHeader, EmptyState } from "@/components/app/card";
 import { Button } from "@/components/ui/button";
-import { Select, TextInput } from "@/components/ui/fields";
+import { Segmented } from "@/components/app/segmented";
+import { SearchInput, Select } from "@/components/app/fields";
 import { useWorkspace } from "@/lib/workspace";
 import { TaskRow } from "./task-row";
 import { TaskEditor } from "./task-editor";
@@ -71,39 +71,27 @@ export function TasksTab() {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-2">
-        <div
-          role="radiogroup"
-          aria-label="상태"
-          className="flex rounded-[10px] bg-surface p-0.5 ring-1 ring-line"
-        >
-          {(["open", "done"] as const).map((f) => (
-            <button
-              key={f}
-              type="button"
-              role="radio"
-              aria-checked={filter === f}
-              onClick={() => setFilter(f)}
-              className={clsx(
-                "rounded-lg px-3 py-1.5 text-sm font-semibold",
-                filter === f ? "bg-accent-soft text-accent-strong" : "text-ink-muted",
-              )}
-            >
-              {f === "open" ? "열림" : "완료"}
-            </button>
-          ))}
-        </div>
-        <TextInput
+        <Segmented
+          label="상태"
+          value={filter}
+          onChange={setFilter}
+          options={[
+            { value: "open", label: "열림" },
+            { value: "done", label: "완료" },
+          ]}
+        />
+        <SearchInput
           aria-label="할 일 검색"
           placeholder="검색"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          className="!w-40 flex-1 sm:flex-none"
+          className="order-first w-full sm:order-none sm:w-48"
         />
         <Select
           aria-label="프로젝트로 거르기"
           value={projectId}
           onChange={(e) => setProjectId(e.target.value)}
-          className="!w-auto max-w-48"
+          className="w-auto max-w-48"
         >
           <option value="">모든 프로젝트</option>
           {ws.projects.map((p) => (
@@ -112,7 +100,7 @@ export function TasksTab() {
             </option>
           ))}
         </Select>
-        <Button variant="primary" className="ml-auto" onClick={() => edit(null)}>
+        <Button className="ml-auto" onClick={() => edit(null)}>
           <Plus className="size-4" aria-hidden /> 새 할 일
         </Button>
       </div>
@@ -126,7 +114,7 @@ export function TasksTab() {
         groups.map((g) => (
           <Card key={g.id}>
             <CardHeader title={g.title} description={`${g.items.length}개`} as="h2" />
-            <ul className="divide-y divide-line">
+            <ul className="divide-y divide-border">
               {g.items.map((t) => (
                 <TaskRow
                   key={t.id}

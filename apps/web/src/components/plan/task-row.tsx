@@ -1,12 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import clsx from "clsx";
+import { cn } from "@/lib/utils";
 import { CalendarClock, Flag, Repeat, Star } from "lucide-react";
 import type { Task } from "@liferoute/contracts";
 import { describeRecurrence } from "@liferoute/core";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useWorkspace } from "@/lib/workspace";
-import { useToast } from "@/components/ui/toast";
+import { useToast } from "@/components/app/toast";
 import { instantLabel, relativeDay } from "@/lib/dates";
 
 /** One task line: completion checkbox, title, due / planned / project metadata. */
@@ -56,35 +57,36 @@ export function TaskRow({
 
   return (
     <li className="group flex items-start gap-3 py-2.5">
-      <input
-        type="checkbox"
+      <Checkbox
         checked={done}
-        onChange={toggle}
+        onCheckedChange={() => void toggle()}
         aria-label={done ? `${task.title} 완료 취소` : `${task.title} 완료`}
-        className="mt-0.5 size-5 shrink-0 cursor-pointer rounded accent-[var(--color-accent)]"
+        className="mt-0.5 size-5 rounded-full data-[state=checked]:border-primary"
         disabled={task.status === "cancelled"}
       />
       <div className="min-w-0 flex-1">
         <button
           type="button"
           onClick={() => onOpen?.(task)}
-          className={clsx(
+          className={cn(
             "block max-w-full truncate text-left text-[15px] font-medium",
-            done && "text-ink-subtle line-through",
-            task.status === "cancelled" && "text-ink-subtle line-through",
-            onOpen && "hover:text-accent-strong",
+            done && "text-muted-foreground line-through",
+            task.status === "cancelled" && "text-muted-foreground line-through",
+            onOpen && "hover:text-primary",
           )}
         >
           {task.title}
         </button>
-        <div className="mt-0.5 flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-[12px] text-ink-muted">
+        <div className="mt-0.5 flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-[12px] text-muted-foreground">
           {showTop && task.topDate === ws.today && task.status === "open" ? (
-            <span className="inline-flex items-center gap-1 text-accent-strong">
+            <span className="inline-flex items-center gap-1 text-primary">
               <Star className="size-3" aria-hidden /> 오늘의 {task.topRank}
             </span>
           ) : null}
           {task.dueDate ? (
-            <span className={clsx("inline-flex items-center gap-1", overdue && "font-semibold text-danger")}>
+            <span
+              className={cn("inline-flex items-center gap-1", overdue && "font-semibold text-destructive")}
+            >
               <Flag className="size-3" aria-hidden /> 마감 {relativeDay(task.dueDate, ws.today)}
               {overdue ? " (지남)" : ""}
             </span>

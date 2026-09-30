@@ -44,6 +44,7 @@ export default defineConfig({
       LIFEROUTE_DATA_DIR: process.env.E2E_DATA_DIR ?? "/tmp/liferoute-e2e-data",
       GOOGLE_CLIENT_ID: "",
       GOOGLE_CLIENT_SECRET: "",
+      OPENAI_API_KEY: "",
       ANTHROPIC_API_KEY: "",
     },
   },

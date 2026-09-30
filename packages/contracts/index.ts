@@ -339,7 +339,8 @@ export const AccountSchema = z
   });
 export type Account = z.infer<typeof AccountSchema>;
 
-export const SnapshotSourceSchema = z.enum(["manual", "toss"]);
+/** Q-2: 토스뱅크 잔액과 토스증권 잔고를 따로 가져온다(공식 API 연결 전에는 manual). */
+export const SnapshotSourceSchema = z.enum(["manual", "toss_bank", "toss_securities"]);
 const snapshotShape = {
   id: IdSchema,
   accountId: IdSchema,
@@ -710,7 +711,7 @@ export const ProposalSchema = z
   });
 export type Proposal = z.infer<typeof ProposalSchema>;
 
-export const ConnectionProviderSchema = z.enum(["google", "toss", "ai"]);
+export const ConnectionProviderSchema = z.enum(["google", "toss_bank", "toss_securities", "ai"]);
 export type ConnectionProvider = z.infer<typeof ConnectionProviderSchema>;
 export const ConnectionStatusSchema = z.enum([
   "disconnected",
@@ -747,7 +748,8 @@ export const RetentionPolicySchema = z.object({
   weekly: z.number().int().min(0).max(52),
   monthly: z.number().int().min(0).max(120),
 });
-export const AiProviderSchema = z.enum(["disconnected", "anthropic"]);
+/** Q-4: 기본은 꺼짐, 켜면 OpenAI GPT. Anthropic은 선택지로 남긴다(ADR-013). */
+export const AiProviderSchema = z.enum(["disconnected", "openai", "anthropic"]);
 export const FinanceSettingsSchema = z.object({
   goalAmountKrw: MoneySchema,
   /** 소유자 생성 시 startDate=그날, targetDate=startDate+36개월로 저장(재계산하지 않음). */
@@ -1600,7 +1602,9 @@ export const SettingsPatchSchema = z.object({
 export const SettingsUpdatePayloadSchema = z.object({ ...expected, patch: SettingsPatchSchema });
 
 export const ConnectionDisconnectPayloadSchema = z.object({ provider: ConnectionProviderSchema });
-export const ConnectionSyncNowPayloadSchema = z.object({ provider: z.enum(["google", "toss"]) });
+export const ConnectionSyncNowPayloadSchema = z.object({
+  provider: z.enum(["google", "toss_bank", "toss_securities"]),
+});
 
 export const TokenCreatePayloadSchema = z.object({
   label: z.string().min(1).max(100),

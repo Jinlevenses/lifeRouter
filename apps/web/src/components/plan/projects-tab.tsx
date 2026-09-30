@@ -3,10 +3,10 @@
 import { useState } from "react";
 import { Pencil, Plus } from "lucide-react";
 import type { Goal, Project } from "@liferoute/contracts";
-import { Badge, Card, CardHeader, EmptyState } from "@/components/ui/card";
+import { Badge, Card, CardHeader, EmptyState } from "@/components/app/card";
 import { Button } from "@/components/ui/button";
-import { Sheet } from "@/components/ui/dialog";
-import { Field, Select, TextArea, TextInput } from "@/components/ui/fields";
+import { Sheet } from "@/components/app/dialog";
+import { Field, Select, TextArea, TextInput } from "@/components/app/fields";
 import { useWorkspace } from "@/lib/workspace";
 import { relativeDay } from "@/lib/dates";
 import { TaskEditor } from "./task-editor";
@@ -35,10 +35,10 @@ export function ProjectsTab() {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap justify-end gap-2">
-        <Button onClick={() => setProject({ project: null, goalId: null })}>
+        <Button variant="outline" onClick={() => setProject({ project: null, goalId: null })}>
           <Plus className="size-4" aria-hidden /> 프로젝트
         </Button>
-        <Button variant="primary" onClick={() => setGoal(null)}>
+        <Button onClick={() => setGoal(null)}>
           <Plus className="size-4" aria-hidden /> 목표
         </Button>
       </div>
@@ -85,9 +85,9 @@ export function ProjectsTab() {
               }
             />
             {projects.length === 0 ? (
-              <p className="text-[13px] text-ink-muted">프로젝트가 없습니다.</p>
+              <p className="text-[13px] text-muted-foreground">프로젝트가 없습니다.</p>
             ) : (
-              <ul className="divide-y divide-line">
+              <ul className="divide-y divide-border">
                 {projects.map((p) => {
                   const tasks = ws.tasks.filter((t) => t.projectId === p.id);
                   const open = tasks.filter((t) => t.status === "open").length;
@@ -98,7 +98,7 @@ export function ProjectsTab() {
                         <div className="flex flex-wrap items-center gap-2">
                           <button
                             type="button"
-                            className="text-[15px] font-semibold hover:text-accent-strong"
+                            className="text-[15px] font-semibold hover:text-primary"
                             onClick={() => setProject({ project: p, goalId: p.goalId })}
                           >
                             {p.title}
@@ -108,9 +108,11 @@ export function ProjectsTab() {
                           </Badge>
                         </div>
                         {p.doneCriteria ? (
-                          <p className="mt-0.5 text-[13px] text-ink-muted">완료 기준: {p.doneCriteria}</p>
+                          <p className="mt-0.5 text-[13px] text-muted-foreground">
+                            완료 기준: {p.doneCriteria}
+                          </p>
                         ) : null}
-                        <p className="mt-0.5 text-[12px] text-ink-subtle">
+                        <p className="mt-0.5 text-[12px] text-muted-foreground">
                           열린 할 일 {open} · 완료 {done}
                           {p.dueDate ? ` · 마감 ${relativeDay(p.dueDate, ws.today)}` : ""}
                         </p>
@@ -178,14 +180,14 @@ function GoalEditor({ goal, onClose }: { goal: Goal | null; onClose: () => void 
       footer={
         <>
           {goal ? (
-            <Button variant="ghost" className="mr-auto text-danger" onClick={remove}>
+            <Button variant="ghost" className="mr-auto text-destructive" onClick={remove}>
               삭제
             </Button>
           ) : null}
           <Button variant="ghost" onClick={onClose}>
             닫기
           </Button>
-          <Button variant="primary" onClick={save} disabled={!title.trim()}>
+          <Button onClick={save} disabled={!title.trim()}>
             저장
           </Button>
         </>
@@ -288,14 +290,14 @@ function ProjectEditor({
       footer={
         <>
           {project ? (
-            <Button variant="ghost" className="mr-auto text-danger" onClick={remove}>
+            <Button variant="ghost" className="mr-auto text-destructive" onClick={remove}>
               삭제
             </Button>
           ) : null}
           <Button variant="ghost" onClick={onClose}>
             닫기
           </Button>
-          <Button variant="primary" onClick={save} disabled={!title.trim()}>
+          <Button onClick={save} disabled={!title.trim()}>
             저장
           </Button>
         </>
